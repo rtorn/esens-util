@@ -216,6 +216,8 @@ class ReadGribFiles:
        else:
           self.has_specific_humidity = False
 
+       self.has_total_precip = True
+
 
     def member_name(self, member):
 
@@ -369,7 +371,7 @@ class ReadGribFiles:
        return(ensarr)
 
 
-    def read_pressure_levels(self, varname, vdict):
+    def read_pressure_levels(self, varname):
 
        nn = '%0.3i' % 1
        return self.domdict.isobaricInhPa[:]
