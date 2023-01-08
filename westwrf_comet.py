@@ -147,7 +147,7 @@ class ReadGribFiles:
        self.fdatestr = fdatestr
        self.config = config
 
-       self.filetype = config.get('file_format', 'minghua')
+       self.filetype = config.get('file_format', 'westwrf')
        self.nens = int(config['num_ens'])
        self.halfens = int((self.nens - 1) / 2)
 
@@ -226,13 +226,15 @@ class ReadGribFiles:
           if self.filetype == 'minghua':
              file_name = "{0}/{1}/ecm{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
           elif self.filetype == 'westwrf':
-             file_name = "{0}/{1}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
+             file_name = "{0}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,fmem,self.fdatestr)
+#             file_name = "{0}/{1}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
        else:
           fmem = '%0.3i' % (member - self.halfens)
           if self.filetype == 'minghua':
              file_name = "{0}/{1}/gefs{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
           elif self.filetype == 'westwrf':
-             file_name = "{0}/{1}/gefs{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
+             file_name = "{0}/gefs{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,fmem,self.fdatestr)
+#             file_name = "{0}/{1}/gefs{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
 
        return file_name
         
