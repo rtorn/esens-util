@@ -168,19 +168,29 @@ class ReadGribFiles:
        self.domdict = self.domdict.rename(self.dimlist)
 
        if np.max(self.domdict.coords['longitude']) > 180:
-          self.domdict.coords['longitude']  = (self.domdict.coords['longitude'] + 180) % 360 - 180
+          self.domdict.coords['longitude'] = (self.domdict.coords['longitude'] + 180) % 360 - 180
 
+       if config.get('flip_lon','False') == 'True':
+          self.domdict.coords['longitude'] = (self.domdict.coords['longitude'] + 360.) % 360.
 
-       self.truelat1 = float(config.get('truelat1', '39.0'))
-       self.truelat2 = float(config.get('truelat2', '50.0'))
-       self.knowni   = float(config.get('knowni', '0.0'))
-       self.knownj   = float(config.get('knownj', '0.0'))
-       self.stdlon   = float(config.get('stdlon', '-125.0'))
-       self.dx       = float(config.get('dx', '9000.0'))
-       self.lat1     = self.domdict.latitude[0,0]
-       self.lon1     = self.domdict.longitude[0,0]
+       self.grid_type = config.get('grid_type','Cassini')
+       self.truelat1  = float(config.get('grid_truelat1', '39.0'))
+       self.truelat2  = float(config.get('grid_truelat2', '50.0'))
+       self.stdlon    = float(config.get('grid_stdlon', '-125.0'))
+       self.dx        = float(config.get('grid_dx', '9000.0'))
+       self.latinc    = float(config.get('grid_latinc', '0.08'))
+       self.loninc    = float(config.get('grid_loninc', '0.08'))
+       self.lat0      = float(config.get('grid_lat0', '51.0'))
+       self.lon0      = float(config.get('grid_lon0', '180.0'))
+       self.knowni    = float(config.get('knowni', '0.0'))
+       self.knownj    = float(config.get('knownj', '0.0'))
+       self.lat1      = self.domdict.latitude[0,0].values
+       self.lon1      = self.domdict.longitude[0,0].values
 
-       self.set_lc_domain()
+       if self.grid_type == 'Cassini':
+          self.set_cassini_domain()  
+       elif self.grid_type == 'LambertConformal':
+          self.set_lc_domain()
 
        #  This is a dictionary that maps from generic variable names to the name of variable in file
        if self.filetype == 'minghua':
@@ -276,26 +286,101 @@ class ReadGribFiles:
        self.polej = 1.0 + self.hemi*self.knownj + self.rsw * np.cos(arg)
 
 
+    def set_cassini_domain(self):
+
+       self.hemi = 1.0
+
+       # Try to determine whether this domain has global coverage
+       if np.abs(self.latinc/2.0 + 90.0) < 0.001 and \
+          np.abs(np.mod(self.lon1 - self.loninc/2.0 - self.stdlon,360.0)) < 0.001:
+          global_domain = True
+       else:
+          global_domain = False
+
+       if np.abs(self.lat0) != 90.0 and (not global_domain):
+          self.lat1, self.lon1 = self.rotate_coords(self.lat1, self.lon1, -1)
+
+
+    def rotate_coords(self, ilat, ilon, direction):
+
+       # Convert all angles to radians
+       phi_np = np.radians(self.lat0)
+       lam_np = np.radians(self.lon0)
+       lam_0  = np.radians(self.stdlon)
+       rlat   = np.radians(ilat)
+       rlon   = np.radians(ilon)
+
+       if direction < 0:
+          dlam = np.pi - lam_0
+       else:
+          dlam = lam_np
+
+       sinphi = np.cos(phi_np)*np.cos(rlat)*np.cos(rlon-dlam) + np.sin(phi_np)*np.sin(rlat)
+       cosphi = np.sqrt(1.0-sinphi*sinphi)
+       coslam = np.sin(phi_np)*np.cos(rlat)*np.cos(rlon-dlam) - np.cos(phi_np)*np.sin(rlat)
+       sinlam = np.cos(rlat)*np.sin(rlon-dlam)
+
+       if cosphi != 0.0:
+          coslam = coslam/cosphi
+          sinlam = sinlam/cosphi
+       olat = np.degrees(np.arcsin(sinphi))
+       olon = np.degrees(np.arctan2(sinlam,coslam)-dlam-lam_0+lam_np)
+       if olon < -180.0:
+          olon = olon + 360.0
+       if olon > 180.0:
+          olon = olon - 360.0
+
+       return olat, olon
+
+
     def latlon_to_ij(self, lat, lon):
 
-       deltalon = lon - self.stdlon
-       if deltalon > 180.0:
-          deltalon = deltalon - 360.0
-       if deltalon < -180.0:
-          deltalon = deltalon + 360.0
+       if self.grid_type == 'Cassini':
 
-       ctl1r = np.cos(np.radians(self.truelat1))
+          if np.abs(self.lat0) != 90.0:
+             comp_lat, comp_lon = self.rotate_coords(lat, lon, -1)
+          else:
+             comp_lat = lat
+             comp_lon = lon
 
-       #  Radius to desired point
-       rm = self.rebydx * ctl1r/self.cone * \
-           (np.tan(np.radians(90.0*self.hemi-lat)/2.0) / \
-            np.tan(np.radians(90.0*self.hemi-self.truelat1)/2.0))**self.cone
+          deltalat = comp_lat - self.lat1
+          deltalon = comp_lon - self.lon1
 
-       arg = self.cone*np.radians(deltalon)
-       i = int(self.hemi * (self.polei + self.hemi * rm * np.sin(arg)))
-       j = int(self.hemi * (self.polej - rm * np.cos(arg)))
+          if deltalon <   0.0: 
+             deltalon = deltalon + 360.0
+          if deltalon > 360.0:
+             deltalon = deltalon - 360.0
 
-       return i, j
+          i = deltalon / self.loninc
+          j = deltalat / self.latinc
+
+          if i <= 0.0:
+             i = i + 360.0 / self.loninc
+          if i > 360.0/self.loninc:
+             i = i - 360.0 / self.loninc
+
+          return int(i + self.knowni), int(j + self.knownj)
+
+       elif self.grid_type == 'LambertConformal':
+
+          deltalon = lon - self.stdlon
+          if deltalon > 180.0:
+             deltalon = deltalon - 360.0
+          if deltalon < -180.0:
+             deltalon = deltalon + 360.0
+
+          ctl1r = np.cos(np.radians(self.truelat1))
+
+          #  Radius to desired point
+          rm = self.rebydx * ctl1r/self.cone * \
+              (np.tan(np.radians(90.0*self.hemi-lat)/2.0) / \
+               np.tan(np.radians(90.0*self.hemi-self.truelat1)/2.0))**self.cone
+
+          arg = self.cone*np.radians(deltalon)
+          i = int(self.hemi * (self.polei + self.hemi * rm * np.sin(arg)))
+          j = int(self.hemi * (self.polej - rm * np.cos(arg)))
+
+          return i, j
 
 
     def set_var_bounds(self, varname, vdict):
