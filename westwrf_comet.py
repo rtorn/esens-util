@@ -148,10 +148,17 @@ class ReadGribFiles:
        self.config = config
 
        self.filetype = config.get('file_format', 'westwrf')
-       self.nens = int(config['num_ens'])
-       self.halfens = int((self.nens - 1) / 2)
 
-       file_name = self.member_name(1)
+       self.enslist = ['ecm000', 'ecm001', 'ecm002', 'ecm003', 'ecm004', 'ecm005', 'ecm006', 'ecm007', 'ecm008', 'ecm009', \
+                       'ecm010', 'ecm011', 'ecm012', 'ecm013', 'ecm014', 'ecm015', 'ecm016', 'ecm017', 'ecm018', 'ecm019', \
+                       'ecm020', 'ecm021', 'ecm022', 'ecm023', 'ecm024', 'ecm025', \
+                       'gefs001', 'gefs002', 'gefs003', 'gefs004', 'gefs005', 'gefs006', 'gefs007', 'gefs008', 'gefs009', 'gefs010', \
+                       'gefs011', 'gefs012', 'gefs013', 'gefs014', 'gefs015', 'gefs016', 'gefs017', 'gefs018', 'gefs019', 'gefs020', \
+                       'gefs021', 'gefs022', 'gefs023', 'gefs024', 'gefs025']
+
+       self.nens = len(self.enslist)
+
+       file_name = self.member_name(0)
 
        try:
           self.domdict = xr.open_dataset(file_name, cache=False)
@@ -231,23 +238,14 @@ class ReadGribFiles:
 
     def member_name(self, member):
 
-       if member <= self.halfens:
-          fmem = '%0.3i' % member
-          if self.filetype == 'minghua':
-             file_name = "{0}/{1}/ecm{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
-          elif self.filetype == 'westwrf':
-             file_name = "{0}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,fmem,self.fdatestr)
-#             file_name = "{0}/{1}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
-       else:
-          fmem = '%0.3i' % (member - self.halfens)
-          if self.filetype == 'minghua':
-             file_name = "{0}/{1}/gefs{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
-          elif self.filetype == 'westwrf':
-             file_name = "{0}/gefs{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,fmem,self.fdatestr)
-#             file_name = "{0}/{1}/gefs{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
+       if self.filetype == 'minghua':
+          file_name = "{0}/{1}/{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,self.enslist[member],self.fdatestr)
+       elif self.filetype == 'westwrf':
+          file_name = "{0}/{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,self.enslist[member],self.fdatestr)
+#          file_name = "{0}/{1}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
 
        return file_name
-        
+
 
     def set_lc_domain(self):
 
