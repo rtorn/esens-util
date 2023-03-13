@@ -215,7 +215,11 @@ class ReadGribFiles:
 
         self.has_total_precip = True
 
-        self.nens = int(self.grib_dict['gh_pf'].attrs['GRIB_totalNumber'])
+        for var in self.var_dict.values():
+           varname = '{0}_pf'.format(var)
+           if varname in self.grib_dict:
+              self.nens = int(self.grib_dict[varname].attrs['GRIB_totalNumber'])
+              break
 
 
     def set_var_bounds(self, varname, vdict):
@@ -238,11 +242,11 @@ class ReadGribFiles:
           #  See if the latitude values are ordered reversed
           if float(self.grib_dict[vname].attrs['GRIB_latitudeOfFirstGridPointInDegrees']) > \
              float(self.grib_dict[vname].attrs['GRIB_latitudeOfLastGridPointInDegrees']):
-             vdict['lat_start'] = int(vdict['latitude'][1])
-             vdict['lat_end']   = int(vdict['latitude'][0])
+             vdict['lat_start'] = float(vdict['latitude'][1])
+             vdict['lat_end']   = float(vdict['latitude'][0])
           else:
-             vdict['lat_start'] = int(vdict['latitude'][0])
-             vdict['lat_end']   = int(vdict['latitude'][1])
+             vdict['lat_start'] = float(vdict['latitude'][0])
+             vdict['lat_end']   = float(vdict['latitude'][1])
 
        else:
 
@@ -254,8 +258,8 @@ class ReadGribFiles:
        if 'longitude' in vdict:
 
           #  Take longitude from input values
-          vdict['lon_start'] = int(vdict['longitude'][0])
-          vdict['lon_end']   = int(vdict['longitude'][1])
+          vdict['lon_start'] = float(vdict['longitude'][0])
+          vdict['lon_end']   = float(vdict['longitude'][1])
 
        else:
 
@@ -268,11 +272,11 @@ class ReadGribFiles:
 
           #  See of pressure level values are reversed
           if self.grib_dict[vname].isobaricInhPa[0] > self.grib_dict[vname].isobaricInhPa[1]:
-            vdict['pres_start'] = int(vdict['isobaricInhPa'][1])
-            vdict['pres_end']   = int(vdict['isobaricInhPa'][0])
+            vdict['pres_start'] = float(vdict['isobaricInhPa'][1])
+            vdict['pres_end']   = float(vdict['isobaricInhPa'][0])
           else:
-            vdict['pres_start'] = int(vdict['isobaricInhPa'][0])
-            vdict['pres_end']   = int(vdict['isobaricInhPa'][1])
+            vdict['pres_start'] = float(vdict['isobaricInhPa'][0])
+            vdict['pres_end']   = float(vdict['isobaricInhPa'][1])
 
        return vdict
 
