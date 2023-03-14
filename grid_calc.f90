@@ -8,10 +8,19 @@ subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
    real, intent(in)    :: vort(ny,nx), circrad, dx
    real, intent(out)   :: circ(ny,nx)
 
-   integer :: cint, i, ii, j, jj
-   real    :: csum, asum
+   real, allocatable :: cfac(:,:)
+
+   integer :: cint, i, ii, j, jj, m, n
+   real    :: csum, asum, dist
 
    cint = nint(circrad / dx)
+   allocate(cfac(2*cint+1,2*cint+1))
+
+   cfac(:,:) = 0.0
+   do j = 1, 2*cint+1  ;  do i = 1, 2*cint+1
+      dist = sqrt(real(cint+1-i)**2 + real(cint+1-j)**2) * dx
+      if ( dist <= circrad )  cfac(i,j) = 1.0
+   enddo  ;  enddo
 
    do ii = 1, nx
    do jj = 1, ny
@@ -20,10 +29,10 @@ subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
      asum = 0.0
      do i = max(ii-cint, 1), min(ii+cint, nx)
      do j = max(jj-cint, 1), min(jj+cint, ny)
-       if ( sqrt(real(ii-i)**2 + real(jj-j)**2)*dx <= circrad ) then
-         csum = csum + vort(j,i)*dx*dx
-         asum = asum + dx*dx
-       end if
+       m = i-ii+cint+1
+       n = j-jj+cint+1
+       csum = csum + vort(j,i) * cfac(n,m)
+       asum = asum + cfac(n,m)
      end do
      end do
      circ(jj,ii) = csum / asum
