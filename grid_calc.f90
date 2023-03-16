@@ -1,17 +1,17 @@
 !  python -m numpy.f2py -c grid_calc.f90 -m grid_calc
 
-subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
+subroutine calc_circ(vorin, circrad, dx, nx, ny, circ)
 
    implicit none
 
    integer, intent(in) :: nx, ny
-   real, intent(in)    :: vort(ny,nx), circrad, dx
+   real, intent(in)    :: vorin(ny,nx),circrad, dx
    real, intent(out)   :: circ(ny,nx)
 
    real, allocatable :: cfac(:,:)
 
    integer :: cint, i, ii, j, jj, m, n
-   real    :: csum, asum, dist
+   real    :: csum, asum, ause, dist, usepnt(ny,nx), vort(ny,nx)
 
    cint = nint(circrad / dx)
    allocate(cfac(2*cint+1,2*cint+1))
@@ -22,6 +22,14 @@ subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
       if ( dist <= circrad )  cfac(i,j) = 1.0
    enddo  ;  enddo
 
+   where ( vorin .eq. vorin )
+      usepnt = 1.0
+      vort   = vorin
+   elsewhere
+      usepnt = 0.0
+      vort   = 0.0
+   end where
+
    do ii = 1, nx
    do jj = 1, ny
 
@@ -31,8 +39,9 @@ subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
      do j = max(jj-cint, 1), min(jj+cint, ny)
        m = i-ii+cint+1
        n = j-jj+cint+1
-       csum = csum + vort(j,i) * cfac(n,m)
-       asum = asum + cfac(n,m)
+       ause = cfac(n,m) * usepnt(j,i)
+       csum = csum + vort(j,i) * ause
+       asum = asum + ause
      end do
      end do
      circ(jj,ii) = csum / asum
@@ -40,7 +49,12 @@ subroutine calc_circ(vort, circrad, dx, nx, ny, circ)
    end do
    end do
 
+   where ( vorin .ne. vorin )
+     circ = vorin
+   end where
+
    return
+
 end subroutine calc_circ
 
 
@@ -57,7 +71,7 @@ subroutine calc_circ_llgrid(vort, circrad, lat, lon, global, nx, ny, circ)
    real, intent(out)   :: circ(ny,nx)
    real, allocatable   :: dgrid(:,:)
 
-   integer :: xint, yint, i, ii, iii, j, jj, jjj, k, i1, i2, j1, j2, ngy
+   integer :: xint, yint, i, ii, iii, j, jj, jjj, i1, i2, j1, j2, ngy
    real    :: csum, asum, abox(ny,nx), dlon, dlat, gc_dist
 
    dlon = abs(lon(2)-lon(1))
