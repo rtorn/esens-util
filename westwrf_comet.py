@@ -4,6 +4,7 @@ import sys
 import cfgrib
 import gzip
 import urllib
+import json
 import datetime as dt
 import numpy as np
 import xarray as xr
@@ -149,12 +150,25 @@ class ReadGribFiles:
 
        self.filetype = config.get('file_format', 'westwrf')
 
-       self.enslist = ['ecm000', 'ecm001', 'ecm002', 'ecm003', 'ecm004', 'ecm005', 'ecm006', 'ecm007', 'ecm008', 'ecm009', \
-                       'ecm010', 'ecm011', 'ecm012', 'ecm013', 'ecm014', 'ecm015', 'ecm016', 'ecm017', 'ecm018', 'ecm019', \
-                       'ecm020', 'ecm021', 'ecm022', 'ecm023', 'ecm024', 'ecm025', \
-                       'gefs001', 'gefs002', 'gefs003', 'gefs004', 'gefs005', 'gefs006', 'gefs007', 'gefs008', 'gefs009', 'gefs010', \
-                       'gefs011', 'gefs012', 'gefs013', 'gefs014', 'gefs015', 'gefs016', 'gefs017', 'gefs018', 'gefs019', 'gefs020', \
-                       'gefs021', 'gefs022', 'gefs023', 'gefs024', 'gefs025']
+       if 'ensemble_list' in self.config:
+
+          elist = [e.strip() for e in config['ensemble_list'].split(',')]         
+          if len(elist) > 1:
+             self.enslist = elist
+          else:
+             self.enslist = []
+             with open(elist[0]) as f:
+                for line in f:
+                   self.enslist.append(line.rstrip())
+
+       else:
+
+          self.enslist = ['ecm000', 'ecm001', 'ecm002', 'ecm003', 'ecm004', 'ecm005', 'ecm006', 'ecm007', 'ecm008', 
+                          'ecm009', 'ecm010', 'ecm011', 'ecm012', 'ecm013', 'ecm014', 'ecm015', 'ecm016', 'ecm017', 
+                          'ecm018', 'ecm019', 'ecm020', 'ecm021', 'ecm022', 'ecm023', 'ecm024', 'ecm025', 
+                          'gefs001', 'gefs002', 'gefs003', 'gefs004', 'gefs005', 'gefs006', 'gefs007', 'gefs008', 'gefs009', 
+                          'gefs010', 'gefs011', 'gefs012', 'gefs013', 'gefs014', 'gefs015', 'gefs016', 'gefs017', 'gefs018', 
+                          'gefs019', 'gefs020', 'gefs021', 'gefs022', 'gefs023', 'gefs024', 'gefs025']
 
        self.nens = len(self.enslist)
 
@@ -416,8 +430,8 @@ class ReadGribFiles:
              vdict['pres_start'] = int(np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][1]))[0])
              vdict['pres_end']   = int(np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][0]))[0])+1
           else:
-             vdict['pres_start'] = np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][0]))[0]
-             vdict['pres_end']   = np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][1]))[0]
+             vdict['pres_start'] = int(np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][0]))[0])
+             vdict['pres_end']   = int(np.where(self.domdict.isobaricInhPa[:]==int(vdict['isobaricInhPa'][1]))[0])+1
 
        return vdict
 
