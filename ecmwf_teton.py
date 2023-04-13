@@ -373,6 +373,28 @@ class ReadGribFiles:
        del self.grib_dict
 
 
+    def read_static_field(self, static_file, varname, vdict):
+       '''
+       This is a generic routine that is used to read a static field from a file from 
+       a user-provided file based on the information contained within the dictionary vdict.
+
+       Attributes:
+           static_file (string):  Name of file to extract variable from 
+           varname     (string):  Name of the variable that will be extracted from file
+           vdict         (dict):  The dictionary object with variable information
+       '''
+
+       static_dict = {'landmask': 'lsm'}
+
+       sfid = xr.open_dataset(static_file, engine='cfgrib')
+       vout = sfid[static_dict[varname]].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
+                                             longitude=slice(vdict['lon_start'], vdict['lon_end']))
+
+       sfid.close()
+
+       return(vout)
+
+
 if __name__ == '__main__':
 
     src1 = "/Users/parthpatwari/RA_Atmospheric_Science/Old_Code/atcf_data"
