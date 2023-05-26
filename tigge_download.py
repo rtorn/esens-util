@@ -72,9 +72,6 @@ elif config['model_src'] == 'GEFS':
   model_num = "1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30"
 #  model_num = "1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20"
 
-atmres = config.get('tigge_forecast_grid_space','1.0/1.0')
-sfcres = "0.25/0.25"
-
 os.chdir(config['work_dir'])
 
 server = ECMWFDataServer()
@@ -89,7 +86,7 @@ server.retrieve({
     'number'    : model_num,
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "pf",
     'date'      : daystr,
@@ -105,7 +102,7 @@ server.retrieve({
     'parameter' : "130/131/132/133/156",
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "cf",
     'date'      : daystr,
@@ -124,7 +121,7 @@ server.retrieve({
     'number'    : model_num,
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "pf",
     'date'      : daystr,
@@ -140,7 +137,7 @@ server.retrieve({
     'parameter' : "3/131/132",
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "cf",
     'date'      : daystr,
@@ -159,7 +156,7 @@ server.retrieve({
     'number'    : model_num,
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "pf",
     'date'      : daystr,
@@ -174,7 +171,7 @@ server.retrieve({
     'parameter' : "59/136/151/167/168",
     'dataset'   : "tigge",
     'step'      : config['tigge_forecast_time'],
-    'grid'      : atmres,
+    'grid'      : config.get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
     'type'      : "cf",
     'date'      : daystr,
@@ -190,8 +187,9 @@ server.retrieve({
     'parameter' : "165/166/228",
     'number'    : model_num,
     'dataset'   : "tigge",
-    'step'      : config['tigge_forecast_time'],
-    'grid'      : sfcres,
+    'area'      : config.get('tigge_surface_area','90/-180/-90/179'),
+    'step'      : config.get('tigge_surface_time',config['tigge_forecast_time']),
+    'grid'      : config.get('tigge_surface_grid_space','0.25/0.25'),
     'time'      : hhstr,
     'type'      : "pf",
     'date'      : daystr,
@@ -205,8 +203,9 @@ server.retrieve({
     'expver'    : "prod",
     'parameter' : "165/166/228",
     'dataset'   : "tigge",
-    'step'      : config['tigge_forecast_time'],
-    'grid'      : sfcres,
+    'area'      : config.get('tigge_surface_area','90/-180/-90/179'),
+    'step'      : config.get('tigge_surface_time',config['tigge_forecast_time']),
+    'grid'      : config.get('tigge_surface_grid_space','0.25/0.25'),
     'time'      : hhstr,
     'type'      : "cf",
     'date'      : daystr,
@@ -214,13 +213,12 @@ server.retrieve({
     'target'    : "tigge_output_hrsfc_cf.grib"
 })
 
-ftype = ("pl", "sfc", "hrsfc")
-
-for i in range(len(ftype)):
-   os.system("wgrib2 -s tigge_output_{0}_pf.grib >& grib_{0}_pf.out".format(ftype[i]))
-   os.system("wgrib2 -s tigge_output_{0}_cf.grib >& grib_{0}_cf.out".format(ftype[i]))
+for ftype in ["pl", "sfc", 'hrsfc']:
+   os.system("wgrib2 -s tigge_output_{0}_pf.grib >& grib_{0}_pf.out".format(ftype))
+   os.system("wgrib2 -s tigge_output_{0}_cf.grib >& grib_{0}_cf.out".format(ftype))
 
 hlist = config['tigge_forecast_time'].split("/")
+slist = config.get('tigge_surface_time',config['tigge_forecast_time']).split("/")
 
 init   = dt.datetime.strptime(yyyymmddhh, '%Y%m%d%H')
 init_s = init.strftime("%m%d%H%M")
@@ -249,21 +247,58 @@ for t in range(len(hlist)):
 
   gribout = 'E1E{0}{1}1'.format(str(init_s), str(datef_s))  
 
-  for i in range(len(ftype)):
+  for ftype in ["pl", "sfc"]:
      os.system("cat grib_{0}_cf.out | grep \"{1}\" | wgrib2 -fix_ncep -i -append tigge_output_{0}_cf.grib \
-                   -grib {2} >& /dev/null".format(ftype[i],timestr,gribout))
+                   -grib {2} >& /dev/null".format(ftype,timestr,gribout))
      os.system("cat grib_{0}_pf.out | grep \"{1}\" | wgrib2 -fix_ncep -i -append tigge_output_{0}_pf.grib \
-                   -grib {2} >& /dev/null".format(ftype[i],timestr,gribout))
+                   -grib {2} >& /dev/null".format(ftype,timestr,gribout))
 
-  if int(hlist[t]) > 0:
+
+for ftype in ["pl", "sfc"]:
+   os.remove("tigge_output_{0}_pf.grib".format(ftype))
+   os.remove("tigge_output_{0}_cf.grib".format(ftype))
+   os.remove("grib_{0}_pf.out".format(ftype))
+   os.remove("grib_{0}_cf.out".format(ftype))
+
+
+for t in range(len(slist)):
+
+  datef   = init + dt.timedelta(hours=int(slist[t]))
+  datef_s = datef.strftime("%m%d%H%M")
+
+  if int(slist[t]) == 0:
+     timestr = ":anl:"
+  else:
+     timestr = ":{0} hour fcst:".format(slist[t])
+  hhh = '%0.3i' % int(slist[t])
+
+  if np.remainder(int(slist[t]),24) == 0:
+     pcpstr = ":0-{0} day acc fcst:".format(round(float(slist[t]) / 24.))
+  else:
+     pcpstr = ":0-{0} hour acc fcst:".format(slist[t])
+
+  if os.path.isfile("f{0}_fields.grb".format(hhh)):
+     os.remove("f{0}_fields.grb".format(hhh))
+
+  print(slist[t],hhh,timestr,pcpstr)
+
+  gribout = 'E1E{0}{1}1'.format(str(init_s), str(datef_s))
+
+  for ftype in ['hrsfc']:
+     os.system("cat grib_{0}_cf.out | grep \"{1}\" | wgrib2 -fix_ncep -i -append tigge_output_{0}_cf.grib \
+                   -grib {2} >& /dev/null".format(ftype,timestr,gribout))
+     os.system("cat grib_{0}_pf.out | grep \"{1}\" | wgrib2 -fix_ncep -i -append tigge_output_{0}_pf.grib \
+                   -grib {2} >& /dev/null".format(ftype,timestr,gribout))
+
+  if int(slist[t]) > 0:
      os.system("cat grib_hrsfc_cf.out | grep \"{0}\" | wgrib2 -fix_ncep -i -append tigge_output_hrsfc_cf.grib \
                    -grib {1} >& /dev/null".format(pcpstr,gribout))
      os.system("cat grib_hrsfc_pf.out | grep \"{0}\" | wgrib2 -fix_ncep -i -append tigge_output_hrsfc_pf.grib \
                    -grib {1} >& /dev/null".format(pcpstr,gribout))
 
-for i in range(len(ftype)):
-   os.remove("tigge_output_{0}_pf.grib".format(ftype[i]))
-   os.remove("tigge_output_{0}_cf.grib".format(ftype[i]))
-   os.remove("grib_{0}_pf.out".format(ftype[i]))
-   os.remove("grib_{0}_cf.out".format(ftype[i]))
 
+for ftype in ["hrsfc"]:
+   os.remove("tigge_output_{0}_pf.grib".format(ftype))
+   os.remove("tigge_output_{0}_cf.grib".format(ftype))
+   os.remove("grib_{0}_pf.out".format(ftype))
+   os.remove("grib_{0}_cf.out".format(ftype))
