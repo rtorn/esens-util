@@ -479,7 +479,8 @@ def plotScalarSens(lat, lon, sens, emea, sigv, fileout, plotDict):
   addDrop(plotDict.get("dropsonde_file","null"), plt, plotDict)
 
   #  Add colorbar to the plot
-  cbar = plt.colorbar(pltf, fraction=0.15, aspect=45., pad=0.04, orientation='horizontal')
+  cbar = plt.colorbar(pltf, fraction=0.15, aspect=45., pad=0.04, shrink=float(plotDict.get('cbar_shrink', '1.0')), \
+                       orientation='horizontal')
   cbar.set_ticks(compd_range[1:11])
   cb = plt.clabel(pltm, inline_spacing=0.0, fontsize=12, fmt=plotDict.get('clabel_fmt', "%1.0f"))
 
@@ -556,7 +557,8 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
   addDrop(plotDict.get("dropsonde_file","null"), plt, plotDict)
 
   #  Add colorbar to the plot
-  cbar = plt.colorbar(pltf, fraction=0.10, aspect=45., pad=0.04, shrink=1.0, orientation='horizontal')
+  cbar = plt.colorbar(pltf, fraction=0.10, aspect=45., pad=0.04, shrink=float(plotDict.get('cbar_shrink', '1.0')), \
+                       orientation='horizontal')
   cbar.set_ticks(compd_range[1:11])
 
   plt.savefig(fileout,format='png',dpi=120,bbox_inches='tight')
