@@ -39,6 +39,8 @@ def addDrop(dropfile, plt, plotDict):
 
      if droptype == 'nhc':
 
+#        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep = '\s+', skiprows=6, skipfooter=1, usecols=[0, 1, 2, 3])
+
         fdrop = open(dropfile, 'r')
         intext = fdrop.readlines()
 
