@@ -30,6 +30,7 @@ subroutine calc_circ(vorin, circrad, dx, nx, ny, circ)
       vort   = 0.0
    end where
 
+   circ(:,:) = vorin(:,:)
    do ii = 1, nx
    do jj = 1, ny
 
