@@ -561,5 +561,5 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
   cbar = plt.colorbar(pltf, fraction=0.10, aspect=45., pad=0.04, shrink=1.0, orientation='horizontal')
   cbar.set_ticks(compd_range[1:11])
 
-  plt.savefig(fileout,format='png',dpi=120,bbox_inches='tight')
+  plt.savefig(fileout,format='png',dpi=120,bbox_inches='tight')   #  pad_inches=0.0
   plt.close(fig)
