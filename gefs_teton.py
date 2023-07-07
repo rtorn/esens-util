@@ -223,7 +223,7 @@ class ReadGribFiles:
 
         for key in self.grib_dict:
            if np.max(self.grib_dict[key].coords['longitude']) > 180:
-              self.grib_dict[key].coords['longitude']  = (self.grib_dict[key].coords['longitude'] + 180) % 360 - 180
+              self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=((self.grib_dict[key].coords['longitude'] + 180) % 360 - 180)).sortby('longitude')
 
         if eval(config.get('flip_lon','False')):
            for key in self.grib_dict:
@@ -266,11 +266,11 @@ class ReadGribFiles:
           #  See if the latitude values are ordered reversed
           if float(self.grib_dict[vname].attrs['GRIB_latitudeOfFirstGridPointInDegrees']) > \
              float(self.grib_dict[vname].attrs['GRIB_latitudeOfLastGridPointInDegrees']):
-             vdict['lat_start'] = int(vdict['latitude'][1])
-             vdict['lat_end']   = int(vdict['latitude'][0])
+             vdict['lat_start'] = float(vdict['latitude'][1])
+             vdict['lat_end']   = float(vdict['latitude'][0])
           else:
-             vdict['lat_start'] = int(vdict['latitude'][0])
-             vdict['lat_end']   = int(vdict['latitude'][1])
+             vdict['lat_start'] = float(vdict['latitude'][0])
+             vdict['lat_end']   = float(vdict['latitude'][1])
 
        else:
 
@@ -282,8 +282,8 @@ class ReadGribFiles:
        if 'longitude' in vdict:
 
           #  Take longitude from input values
-          vdict['lon_start'] = int(vdict['longitude'][0])
-          vdict['lon_end']   = int(vdict['longitude'][1])
+          vdict['lon_start'] = float(vdict['longitude'][0])
+          vdict['lon_end']   = float(vdict['longitude'][1])
 
        else:
 
@@ -296,11 +296,11 @@ class ReadGribFiles:
 
           #  See of pressure level values are reversed
           if self.grib_dict[vname].isobaricInhPa[0] > self.grib_dict[vname].isobaricInhPa[1]:
-            vdict['pres_start'] = int(vdict['isobaricInhPa'][1])
-            vdict['pres_end']   = int(vdict['isobaricInhPa'][0])
+            vdict['pres_start'] = float(vdict['isobaricInhPa'][1])
+            vdict['pres_end']   = float(vdict['isobaricInhPa'][0])
           else:
-            vdict['pres_start'] = int(vdict['isobaricInhPa'][0])
-            vdict['pres_end']   = int(vdict['isobaricInhPa'][1])
+            vdict['pres_start'] = float(vdict['isobaricInhPa'][0])
+            vdict['pres_end']   = float(vdict['isobaricInhPa'][1])
 
        return vdict
 
@@ -390,6 +390,34 @@ class ReadGribFiles:
 
        return(vout)
 
+
+    def read_static_field(self, static_file, varname, vdict):
+       '''
+       This is a generic routine that is used to read a static field from a file from 
+       a user-provided file based on the information contained within the dictionary vdict.
+
+       Attributes:
+           static_file (string):  Name of file to extract variable from 
+           varname     (string):  Name of the variable that will be extracted from file
+           vdict         (dict):  The dictionary object with variable information
+       '''
+
+       static_dict = {'landmask': 'lsm'}
+
+       ds = cfgrib.open_datasets(static_file)
+       st_dict = {}
+       for d in ds:
+          for tt in d:
+             st_dict.update({'{0}'.format(tt): d[tt]})
+
+       for key in st_dict:
+           if np.max(st_dict[key].coords['longitude']) > 180:
+              st_dict[key] = st_dict[key].assign_coords(longitude=((st_dict[key].coords['longitude'] + 180) % 360 - 180)).sortby('longitude')
+
+       vout = st_dict[static_dict[varname]].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
+                                                longitude=slice(vdict['lon_start'], vdict['lon_end']))
+
+       return(vout)
 
 if __name__ == '__main__':
 
