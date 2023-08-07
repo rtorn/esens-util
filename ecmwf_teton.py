@@ -27,6 +27,7 @@ def stage_grib_files(datea, config):
     '''
 
     freq = config.get('fcst_hour_int', 12)
+    #freq = 6
     fmax = config.get('fcst_hour_max', 120)
 
     #  Make the work directory if it does not exist
@@ -200,14 +201,12 @@ class ReadGribFiles:
                          'precipitation': 'tp'}
 
         for key in self.grib_dict:
-           if np.max(self.grib_dict[key].coords['longitude']) > 180:
-              self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=(((self.grib_dict[key].longitude + 180) % 360) - 180)).sortby('longitude')
+           if np.max(self.grib_dict[key].coords['longitude']) > 180.:
+              self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=(((self.grib_dict[key].longitude + 180.) % 360.) - 180.)).sortby('longitude')
 
         if config.get('flip_lon','False') == 'True':
            for key in self.grib_dict:
-              self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=((self.grib_dict[key].coords['longitude'] + 360) % 360)).sortby('longitude')
-#              self.grib_dict[key].coords['longitude'] = (self.grib_dict[key].coords['longitude'] + 360.) % 360.
-#              self.grib_dict[key] = self.grib_dict[key].sortby('longitude')
+              self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=((self.grib_dict[key].coords['longitude'] + 360.) % 360.)).sortby('longitude')
 
         if '{0}_cf'.format(self.var_dict['specific_humidity']) in self.grib_dict:
            self.has_specific_humidity = True
@@ -386,11 +385,18 @@ class ReadGribFiles:
 
        static_dict = {'landmask': 'lsm'}
 
-       sfid = xr.open_dataset(static_file, engine='cfgrib')
-       vout = sfid[static_dict[varname]].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
-                                             longitude=slice(vdict['lon_start'], vdict['lon_end']))
+       ds = cfgrib.open_datasets(static_file)
+       grib_dict = {}
+       for d in ds:
+          for tt in d:
+             grib_dict.update({'{0}'.format(tt): d[tt]})
 
-       sfid.close()
+       if vdict.get('flip_lon','False') == 'True':
+          for key in grib_dict:
+             grib_dict[key] = grib_dict[key].assign_coords(longitude=((grib_dict[key].coords['longitude'] + 360.) % 360.)).sortby('longitude')
+
+       vout = grib_dict[static_dict[varname]].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
+                                                  longitude=slice(vdict['lon_start'], vdict['lon_end']))
 
        return(vout)
 
