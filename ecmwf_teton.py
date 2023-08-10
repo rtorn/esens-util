@@ -198,7 +198,8 @@ class ReadGribFiles:
                          'relative_humidity': 'r',    \
                          'specific_humidity': 'q',    \
                          'sea_level_pressure': 'msl', \
-                         'precipitation': 'tp'}
+                         'precipitation': 'tp',       \
+                         'precip_type': 'ptype'}
 
         for key in self.grib_dict:
            if np.max(self.grib_dict[key].coords['longitude']) > 180.:
