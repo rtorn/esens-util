@@ -26,8 +26,7 @@ def stage_grib_files(datea, config):
         config  (dict):  The dictionary with configuration information
     '''
 
-    freq = config.get('fcst_hour_int', 12)
-    #freq = 6
+    freq = config.get('input_hour_int', 6)
     fmax = config.get('fcst_hour_max', 120)
 
     #  Make the work directory if it does not exist
