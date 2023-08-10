@@ -172,7 +172,17 @@ class ReadGribFiles:
 
         #  Put longitude into -180 to 180 format
         self.ds_dict.coords['lon']  = (self.ds_dict.coords['lon'] + 180.) % 360. - 180.
-        self.ds_dictb.coords['lon'] = (self.ds_dictb.coords['lon'] + 180.) % 360. - 180.
+        self.ds_dict = self.ds_dict.sortby(self.ds_dict.lon)
+#        self.ds_dictb.coords['lon'] = ((self.ds_dictb.coords['lon'] + 180.) % 360. - 180.).sortby('lon')
+#        for key in self.ds_dict:
+#           if np.max(self.ds_dict[key].coords['lon']) > 180:
+#              self.ds_dict[key] = self.ds_dict[key].assign_coords(lon=(((self.ds_dict[key].lon + 180) % 360) - 180)).sortby('lon')
+
+#        for key in self.ds_dictb:
+#           if np.max(self.ds_dictb[key].coords['lon']) > 180:
+#              self.ds_dictb[key] = self.ds_dictb[key].assign_coords(lon=(((self.ds_dictb[key].lon + 180) % 360) - 180)).sortby('lon')
+
+        print(self.ds_dict)
 
         #  This is a dictionary that maps from generic variable names to the name of variable in file
         self.var_dict = {'zonal_wind': 'ugrdprs',          \
@@ -325,7 +335,7 @@ class ReadGribFiles:
                                                 lon=slice(vdict['lon_start'], vdict['lon_end']),   \
                                                 lev=slice(vdict['pres_start'], vdict['pres_end']), \
                                                 time=slice(self.datef, self.datef),                \
-                                                ens=slice(member+1, member+1)).squeeze().rename({'lon': 'longitude','lat': 'latitude','lev': 'isobaricInhPa'}).copy(deep=True)
+                                                ens=slice(member+1, member+1)).squeeze().rename({'lon': 'longitude','lat': 'latitude','lev': 'isobaricInhPa'})
              except (OSError, RuntimeError):
                 print("Read Field Error; Sleeping before trying again")
                 time.sleep(240)      
@@ -347,7 +357,7 @@ class ReadGribFiles:
                                                     lon=slice(vdict['lon_start'], vdict['lon_end']),   \
                                                     lev=slice(vout.isobaricInhPa.values[k], vout.isobaricInhPa.values[k]), \
                                                     time=slice(self.datef, self.datef),                \
-                                                    ens=slice(member+1, member+1)).squeeze().rename({'lon': 'longitude','lat': 'latitude','lev': 'isobaricInhPa'}).copy(deep=True)
+                                                    ens=slice(member+1, member+1)).squeeze().rename({'lon': 'longitude','lat': 'latitude','lev': 'isobaricInhPa'})
                       except (OSError, RuntimeError):
                          print("Read Field Error; Sleeping before trying again")
                          time.sleep(240)
