@@ -89,25 +89,24 @@ def stage_atcf_files(datea, bbnnyyyy, config):
     src  = '{0}/a{1}.dat'.format(config['atcf_dir'],bbnnyyyy)
     nens = int(config['num_ens'])
 
-    #  Wait for the source file to be present 
-    while not os.path.exists(src):
-       time.sleep(20.5)
+    if not os.path.isfile('{0}/atcf_{1}.dat'.format(config['work_dir'],'%0.2i' % nens)):
 
-    #  Wait for the ensemble ATCF information to be placed in the file
-    while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
-       time.sleep(20.7)
+       #  Wait for the source file to be present 
+       while not os.path.exists(src):
+          time.sleep(20.5)
 
-    #  Wait for the file to be finished being copied
-    while ( (time.time() - os.path.getmtime(src)) < 60 ):
-       time.sleep(10)
+       #  Wait for the ensemble ATCF information to be placed in the file
+       while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
+          time.sleep(20.7)
 
-    for n in range(nens + 1):
+       #  Wait for the file to be finished being copied
+       while ( (time.time() - os.path.getmtime(src)) < 60 ):
+          time.sleep(10)
 
-       nn = '%0.2i' % n
-       file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
+       for n in range(nens + 1):
 
-       #  If the specific member's ATCF file does not exist, copy from the source file with sed.
-       if not os.path.isfile(file_name):
+          nn = '%0.2i' % n
+          file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
 
           fo = open(file_name,"w")
           fo.write(os.popen('sed -ne /{0}/p {1} | sed -ne /EE{2}/p'.format(datea,src,nn)).read())
