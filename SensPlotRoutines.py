@@ -369,6 +369,11 @@ def writeSensFile(lat, lon, fhr, emea, sens, sigv, sensfile, plotDict):
   if 'initDate' in plotDict:
      ncfile.time_origin = plotDict.get('initDate')
 
+  #  Add TC latitude/longitude to file if present
+  if 'tcLat' in plotDict and 'tcLon' in plotDict:
+     ncfile.TC_latitude = plotDict.get('tcLat')
+     ncfile.TC_longitude = plotDict.get('tcLon')
+
   #  Create coordinate variables
   lat_out = ncfile.createVariable('lat', np.float32, ('lat',))
   lat_out.units = 'degrees_north'
