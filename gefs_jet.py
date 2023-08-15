@@ -258,6 +258,8 @@ class ReadGribFiles:
 
         self.nens = int(self.grib_dict['gh_pf'].attrs['GRIB_totalNumber']) + 1
 
+        self.has_total_precip = False
+
 
     def set_var_bounds(self, varname, vdict):
        '''
