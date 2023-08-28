@@ -380,14 +380,14 @@ class ReadGribFiles:
              vname = '{0}_cf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']),  \
                                                longitude=slice(vdict['lon_start'], vdict['lon_end']), \
-                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end']))
+                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end'])).copy(deep=True)
 
           else:
              vname = '{0}_pf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(number=member,                                         \
                                                latitude=slice(vdict['lat_start'], vdict['lat_end']),  \
                                                longitude=slice(vdict['lon_start'], vdict['lon_end']), \
-                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end']))
+                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end'])).copy(deep=True)
 
        #  Read the only level if it is a single level variable
        else:
@@ -395,14 +395,14 @@ class ReadGribFiles:
           if member == 0:  #  Control member
              vname = '{0}_cf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
-                                               longitude=slice(vdict['lon_start'], vdict['lon_end']))
+                                               longitude=slice(vdict['lon_start'], vdict['lon_end'])).copy(deep=True)
 
           else:
 
              vname = '{0}_pf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(number=member,                                        \
                                                latitude=slice(vdict['lat_start'], vdict['lat_end']), \
-                                               longitude=slice(vdict['lon_start'], vdict['lon_end']))
+                                               longitude=slice(vdict['lon_start'], vdict['lon_end'])).copy(deep=True)
 
        return(vout)
 
