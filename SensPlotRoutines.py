@@ -39,23 +39,13 @@ def addDrop(dropfile, plt, plotDict):
 
      if droptype == 'nhc':
 
-#        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep = '\s+', skiprows=6, skipfooter=1, usecols=[0, 1, 2, 3])
+        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep = '\s+', engine='python', skiprows=13, skipfooter=1, \
+                         names=['latitude', 'latitude_min', 'longitude', 'longitude_min'], usecols=[1, 2, 3, 4])
 
-        fdrop = open(dropfile, 'r')
-        intext = fdrop.readlines()
-
-        ndrops = len(intext)-14
-        droplat = np.zeros(ndrops)
-        droplon = np.zeros(ndrops)
-
-        #  Loop over dropsonde locations, convert text to lat/lon, plot
-        for i in range(ndrops):
-           str1 = intext[13+i]
-           droplat[i] = float(str1[7:9]) + float(str1[10:12])/60.
-           droplon[i] = float(str1[16:20]) + np.sign(float(str1[16:20]))*float(str1[21:23])/60.
-
+        droplat = ds['latitude'].to_numpy() + ds['latitude_min'].to_numpy() / 60.0
+        droplon = ds['longitude'].to_numpy() + np.sign(ds['longitude'].to_numpy()) * ds['longitude_min'].to_numpy() / 60.0
         plt.plot(droplon, droplat, mtype, color=mcolor, markersize=msize, transform=ccrs.PlateCarree())
-        fdrop.close()
+        del ds
 
      elif droptype == 'hrd':
 
