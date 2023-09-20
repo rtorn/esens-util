@@ -129,6 +129,37 @@ def addRawin(rawinfile, plt, plotDict):
     pass
 
 
+
+def addTurns(turnfile, plt, plotDict):
+  '''
+  This function adds a line that represents the information in the *_turns.txt files
+  produced by NHC.  Users can specify the line style using configuration file 
+  parameters.
+
+  Attributes:
+      turnfile (string):  name of the aircraft track file to plot
+      plt      (object):  matplotlib object to add the dropsonde markers to
+      plotDict (dict.):   dictionary that contains configuration options
+  '''
+
+  lsize  = plotDict.get('turn_line_width', 2)
+  lcolor = plotDict.get('turn_line_color', 'black')
+
+  if os.path.isfile(turnfile):
+
+     turntype = plotDict.get('turn_file_type','nhc')
+
+     if turntype == 'nhc':
+
+        ds = pd.read_csv(filepath_or_buffer=turnfile, header=None, sep = '\s+', engine='python', skiprows=13, skipfooter=1, \
+                         names=['latitude', 'latitude_min', 'longitude', 'longitude_min'], usecols=[1, 2, 3, 4])
+
+        turnlat = ds['latitude'].to_numpy() + ds['latitude_min'].to_numpy() / 60.0
+        turnlon = ds['longitude'].to_numpy() + np.sign(ds['longitude'].to_numpy()) * ds['longitude_min'].to_numpy() / 60.0
+        plt.plot(turnlon, turnlat, '-', color=lcolor, linewidth=lsize, transform=ccrs.PlateCarree())
+        del ds
+
+
 def set_projection(proj, lon1, lon2, DomDict):
   '''
   Function that creates a projection object for plotting.
