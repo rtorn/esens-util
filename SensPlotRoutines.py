@@ -92,7 +92,7 @@ def addRangeRings(cen_lat, cen_lon, lat, lon, plt, plotDict):
   else:
     rrings = [500., 1000., 1500.]
 
-  pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=1.0, colors='gray')
+  pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=1.0,colors='gray',transform=ccrs.PlateCarree())
   lab = plt.clabel(pltrr, [])
 
 
@@ -122,7 +122,7 @@ def addRawin(rawinfile, plt, plotDict):
         rawlat[i] = float(str1[55:60])*0.01
         rawlon[i] = float(str1[61:67])*0.01
 
-      plt.plot(rawlon, rawlat, 'o', color=mcolor, markersize=msize, zorder=5);
+      plt.plot(rawlon, rawlat, 'o', color=mcolor, markersize=msize, zorder=5, transform=ccrs.PlateCarree());
       frawin.close()
 
   except FileNotFoundError:
