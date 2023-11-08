@@ -17,6 +17,31 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from math import radians, degrees, sin, cos, asin, acos, sqrt
 
 
+def addBuoy(buoy1file, buoy2file, plt, plotDict):
+
+  msize  = plotDict.get('buoy1_mark_size', 7)
+  mcolor = plotDict.get('buoy1_mark_color', 'lime')
+  mtype  = plotDict.get('buoy1_mark_type', 'o')
+
+  if os.path.isfile(buoy1file):
+
+     ds = pd.read_csv(filepath_or_buffer=buoy1file, sep = '\s+', header=None, usecols=[1, 3, 4])
+     ds.columns = ['date','latitude','longitude']
+     plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, zorder=15, markeredgecolor='gray', transform=ccrs.PlateCarree())
+     del ds
+
+  msize  = plotDict.get('buoy2_mark_size', 6)
+  mcolor = plotDict.get('buoy2_mark_color', 'lime')
+  mtype  = plotDict.get('buoy2_mark_type', 'P')
+
+  if os.path.isfile(buoy2file):
+
+     ds = pd.read_csv(filepath_or_buffer=buoy2file, sep = '\s+', header=None, usecols=[1, 3, 4])
+     ds.columns = ['date','latitude','longitude']
+     plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, zorder=15, markeredgecolor='gray', transform=ccrs.PlateCarree())
+     del ds
+
+
 def addDrop(dropfile, plt, plotDict):
   '''
   This function adds markers that represent dropsonde locations based on the *_drop.txt files
@@ -505,6 +530,8 @@ def plotScalarSens(lat, lon, sens, emea, sigv, fileout, plotDict):
     addRangeRings(plotDict['ring_center_lat'], plotDict['ring_center_lon'], lat, lon, plt, plotDict)
 
   addDrop(plotDict.get("dropsonde_file","null"), plt, plotDict)
+
+  addBuoy(plotDict.get("buoy1_file","null"), plotDict.get("buoy2_file","null"), plt, plotDict)
 
   #  Add colorbar to the plot
   cbar = plt.colorbar(pltf, fraction=0.15, aspect=45., pad=0.04, shrink=float(plotDict.get('cbar_shrink', '1.0')), \
