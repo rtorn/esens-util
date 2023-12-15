@@ -386,7 +386,7 @@ def great_circle(lon1, lat1, lon2, lat2):
     return 6371. * np.arccos(np.minimum(dist,1.0))
 
 
-def writeSensFile(lat, lon, fhr, emea, sens, sigv, sensfile, plotDict):
+def writeSensFile(lat, lon, fhr, emean, sens, sigv, sensfile, plotDict):
   '''
   Routine that writes a netCDF file that includes the ensemble-mean forecast field, 
   sensitivity, and measure of statistical significance.  This file can be ingested into
@@ -397,7 +397,7 @@ def writeSensFile(lat, lon, fhr, emea, sens, sigv, sensfile, plotDict):
       lat       (float):  Vector of latitude values
       lon       (float):  Vector of longitude values
       fhr         (int):  Forecast hour
-      emea      (float):  2D array of the ensemble-mean field
+      emean     (float):  2D array of the ensemble-mean field
       sens      (float):  2D array of sensitivity field
       sigv      (float):  2D array of statistical significance
       sensfile (string):  Name of netCDF file
@@ -434,8 +434,8 @@ def writeSensFile(lat, lon, fhr, emea, sens, sigv, sensfile, plotDict):
   #  Create other variables
   emea_out = ncfile.createVariable('ensemble_mean',np.float32,('lat','lon')) #,fill_value=fVar['ensemble_data']._FillValue)
   emea_out.description = 'ensemble mean'
-  if hasattr(emea, 'units'):
-    emea_out.units = emea.units
+  if hasattr(emean, 'units'):
+    emea_out.units = emean.units
   sens_out = ncfile.createVariable('sensitivity',np.float32,('lat','lon'))
   sens_out.description = 'regression coefficient'
   if 'metricUnits' in plotDict:
@@ -455,7 +455,7 @@ def writeSensFile(lat, lon, fhr, emea, sens, sigv, sensfile, plotDict):
   lon_out[:]    = lon
   fhr_out[:]    = fhr
 
-  emea_out[:,:] = emea
+  emea_out[:,:] = emean
   sens_out[:,:] = sens
   sigv_out[:,:] = sigv
   if plotDict.get('nhc_sens', False):
