@@ -157,7 +157,7 @@ class ReadGribFiles:
              self.enslist = elist
           else:
              self.enslist = []
-             with open(elist[0]) as f:
+             with open(elist[0].replace({yyyymmddhh},self.datea)) as f:
                 for line in f:
                    self.enslist.append(line.rstrip())
 
@@ -494,12 +494,12 @@ class ReadGribFiles:
        if 'isobaricInhPa' in vdict:
 
           vout = ds.get(self.var_dict[varname])[0,vdict['pres_start']:vdict['pres_end'], \
-                                                vdict['j_start']:vdict['j_end'],vdict['i_start']:vdict['i_end']].squeeze()
+                                                vdict['j_start']:vdict['j_end'],vdict['i_start']:vdict['i_end']].squeeze().rename(self.horlist)
 
        #  Read the only level if it is a single level variable
        else:
 
-          vout = ds.get(self.var_dict[varname])[0,vdict['j_start']:vdict['j_end'],vdict['i_start']:vdict['i_end']].squeeze()
+          vout = ds.get(self.var_dict[varname])[0,vdict['j_start']:vdict['j_end'],vdict['i_start']:vdict['i_end']].squeeze().rename(self.horlist)
 
        ds.close()
        del ds
