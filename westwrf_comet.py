@@ -157,7 +157,8 @@ class ReadGribFiles:
              self.enslist = elist
           else:
              self.enslist = []
-             with open(elist[0].replace({yyyymmddhh},self.datea)) as f:
+             print(elist[0])
+             with open(elist[0].replace('{yyyymmddhh}',self.datea)) as f:
                 for line in f:
                    self.enslist.append(line.rstrip())
 
