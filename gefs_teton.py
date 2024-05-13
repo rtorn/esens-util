@@ -27,13 +27,13 @@ def stage_grib_files(datea, config):
         config  (dict):  The dictionary with configuration information
     '''
 
-    freq = config.get('fcst_hour_int', 12)
-    fmax = config.get('fcst_hour_max', 120)
+    freq = config['model'].get('fcst_hour_int', 12)
+    fmax = config['model'].get('fcst_hour_max', 120)
 
     #  Make the work directory if it does not exist
-    if not os.path.isdir(config['work_dir']):
+    if not os.path.isdir(config['locations']['work_dir']):
        try:
-          os.makedirs(config['work_dir'])
+          os.makedirs(config['locations']['work_dir'])
        except OSError as e:
           raise e
 
@@ -47,8 +47,8 @@ def stage_grib_files(datea, config):
        datef_s = datef.strftime("%m%d%H%M")
 
        grib_file = 'E1E{0}{1}1'.format(str(init_s), str(datef_s))
-       infile    = '{0}/{1}'.format(config['model_dir'],grib_file)
-       outfile   = '{0}/{1}'.format(config['work_dir'],grib_file)
+       infile    = '{0}/{1}'.format(config['locations']['model_dir'],grib_file)
+       outfile   = '{0}/{1}'.format(config['locations']['work_dir'],grib_file)
 
        #  Only try to copy if the file is not there
        if ( not os.path.isfile(outfile) ):
@@ -87,14 +87,14 @@ def stage_atcf_files(datea, bbnnyyyy, config):
         config     (dict):  The dictionary with configuration information
     '''
 
-    nens = int(config['num_ens'])
+    nens = int(config['model']['num_ens'])
 
     try:
 
        #  Unzip the file from the NHC server, write the file to the work directory
-       src  = '{0}/a{1}.dat.gz'.format(config['atcf_dir'],bbnnyyyy)
+       src  = '{0}/a{1}.dat.gz'.format(config['locations']['atcf_dir'],bbnnyyyy)
        gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-       uzfile = open('{0}/a{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+       uzfile = open('{0}/a{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
        uzfile.write(gzfile.read())
        gzfile.close()
        uzfile.close()
@@ -102,9 +102,9 @@ def stage_atcf_files(datea, bbnnyyyy, config):
     except:
 
        #  Unzip the file from the NHC server, write the file to the work directory
-       src  = '{0}/{1}/a{2}.dat.gz'.format(config.get('atcf_alt_dir','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
+       src  = '{0}/{1}/a{2}.dat.gz'.format(config['locations'].get('atcf_alt_dir','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
        gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-       uzfile = open('{0}/a{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+       uzfile = open('{0}/a{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
        uzfile.write(gzfile.read())
        gzfile.close()
        uzfile.close()   
@@ -126,13 +126,13 @@ def stage_atcf_files(datea, bbnnyyyy, config):
           modid = 'AC'
 
        nn = '%0.2i' % n
-       file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
+       file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
 
        #  If the specific member's ATCF file does not exist, copy from the source file with sed.
        if not os.path.isfile(file_name):
 
           fo = open(file_name,"w")
-          fo.write(os.popen('sed -ne /{0}/p {1}/a{2}.dat | sed -ne /{3}{4}/p'.format(datea,config['work_dir'],bbnnyyyy,modid,nn)).read())
+          fo.write(os.popen('sed -ne /{0}/p {1}/a{2}.dat | sed -ne /{3}{4}/p'.format(datea,config['locations']['work_dir'],bbnnyyyy,modid,nn)).read())
           fo.close()
 
 
@@ -154,19 +154,19 @@ def stage_best_file(bbnnyyyy, config):
 
     try:    #  Look for the data in the real-time directory
 
-      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config.get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
-      fileo = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config['locations'].get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
+      fileo = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       fileo.write(filei.read())
       filei.close()
       fileo.close()
 
     except:    #  If the file is not present in the real-time directory, look in the archive.
 
-      src  = '{0}/{1}/b{2}.dat.gz'.format(config.get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
+      src  = '{0}/{1}/b{2}.dat.gz'.format(config['locations'].get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
 
       #  Unzip the file from the NHC server, write the file to the work directory
       gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-      uzfile = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      uzfile = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       uzfile.write(gzfile.read())
       gzfile.close()
       uzfile.close()
@@ -195,7 +195,7 @@ class ReadGribFiles:
         datef_s = datef.strftime("%m%d%H%M")
 
         #  Construct the grib file dictionary for a particular forecast hour
-        file_name = os.path.join(config['work_dir'], "E1E{0}{1}1".format(str(init_s), str(datef_s)))
+        file_name = os.path.join(config['locations']['work_dir'], "E1E{0}{1}1".format(str(init_s), str(datef_s)))
         try:  
            ds = cfgrib.open_datasets(file_name)
            self.grib_dict = {}
@@ -225,7 +225,7 @@ class ReadGribFiles:
            if np.max(self.grib_dict[key].coords['longitude']) > 180:
               self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=((self.grib_dict[key].coords['longitude'] + 180) % 360 - 180)).sortby('longitude')
 
-        if eval(config.get('flip_lon','False')):
+        if eval(config['model'].get('flip_lon','False')):
            for key in self.grib_dict:
               self.grib_dict[key].coords['longitude'] = (self.grib_dict[key].coords['longitude'] + 360.) % 360.
               self.grib_dict[key] = self.grib_dict[key].sortby('longitude')

@@ -24,16 +24,16 @@ def stage_grib_files(datea, config):
         config  (dict):  The dictionary with configuration information
     '''
 
-    freq = config.get('fcst_hour_int', 12)
-    fmax = config.get('fcst_hour_max', 120)
+    freq = config['model'].get('fcst_hour_int', 12)
+    fmax = config['model'].get('fcst_hour_max', 120)
 
     init    = dt.datetime.strptime(datea, '%Y%m%d%H')
     init_s  = init.strftime("%y%j%H")
 
     #  Make the work directory if it does not exist
-    if not os.path.isdir(config['work_dir']):
+    if not os.path.isdir(config['locations']['work_dir']):
        try:
-          os.makedirs(config['work_dir'])
+          os.makedirs(config['locations']['work_dir'])
        except OSError as e:
           raise e
 
@@ -57,17 +57,17 @@ def stage_atcf_files(datea, bbnnyyyy, config):
         config     (dict):  The dictionary with configuration information
     '''
 
-    src  = '{0}/{1}.a{2}.dat'.format(config['atcf_dir'],datea,bbnnyyyy)
+    src  = '{0}/{1}.a{2}.dat'.format(config['locations']['atcf_dir'],datea,bbnnyyyy)
 
     #  Wait for the ensemble ATCF information to be placed in the file
-    while ( len(os.popen('sed -ne /AP/p {0}/{1}.a{2}.dat'.format(config['atcf_dir'],datea,bbnnyyyy)).read()) == 0 ):
+    while ( len(os.popen('sed -ne /AP/p {0}/{1}.a{2}.dat'.format(config['locations']['atcf_dir'],datea,bbnnyyyy)).read()) == 0 ):
        time.sleep(20.7)
 
     #  Wait for the file to be finished being copied
     while ( (time.time() - os.path.getmtime(src)) < 60 ):
        time.sleep(10)
 
-    for n in range(int(config['num_ens']) + 1):
+    for n in range(int(config['model']['num_ens']) + 1):
 
        if ( n > 0 ):
           modid = 'AP'
@@ -75,13 +75,13 @@ def stage_atcf_files(datea, bbnnyyyy, config):
           modid = 'AC'
 
        nn = '%0.2i' % n
-       file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
+       file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
 
        #  If the specific member's ATCF file does not exist, copy from the source file with sed.
        if not os.path.isfile(file_name):
 
           fo = open(file_name,"w")
-          fo.write(os.popen('sed -ne /{0}/p {1}/{0}.a{2}.dat | sed -ne /{3}{4}/p'.format(datea,config['atcf_dir'],bbnnyyyy,modid,nn)).read())
+          fo.write(os.popen('sed -ne /{0}/p {1}/{0}.a{2}.dat | sed -ne /{3}{4}/p'.format(datea,config['locations']['atcf_dir'],bbnnyyyy,modid,nn)).read())
           fo.close()
 
 
@@ -103,19 +103,19 @@ def stage_best_file(bbnnyyyy, config):
 
     try:    #  Look for the data in the real-time directory
 
-      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config.get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
-      fileo = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config['locations'].get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
+      fileo = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       fileo.write(filei.read())
       filei.close()
       fileo.close()
 
     except:    #  If the file is not present in the real-time directory, look in the archive.
 
-      src  = '{0}/{1}/b{2}.dat.gz'.format(config.get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
+      src  = '{0}/{1}/b{2}.dat.gz'.format(config['locations'].get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
 
       #  Unzip the file from the NHC server, write the file to the work directory
       gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-      uzfile = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      uzfile = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       uzfile.write(gzfile.read())
       gzfile.close()
       uzfile.close()
@@ -148,11 +148,11 @@ class ReadGribFiles:
        self.fdatestr = fdatestr
        self.config = config
 
-       self.filetype = config.get('file_format', 'westwrf')
+       self.filetype = config['model'].get('file_format', 'westwrf')
 
        if 'ensemble_list' in self.config:
 
-          elist = [e.strip() for e in config['ensemble_list'].split(',')]         
+          elist = [e.strip() for e in config['model']['ensemble_list'].split(',')]         
           if len(elist) > 1:
              self.enslist = elist
           else:
@@ -191,20 +191,20 @@ class ReadGribFiles:
        if np.max(self.domdict.coords['longitude']) > 180:
           self.domdict.coords['longitude'] = (self.domdict.coords['longitude'] + 180) % 360 - 180
 
-       if config.get('flip_lon','False') == 'True':
+       if config['model'].get('flip_lon','False') == 'True':
           self.domdict.coords['longitude'] = (self.domdict.coords['longitude'] + 360.) % 360.
 
-       self.grid_type = config.get('grid_type','Cassini')
-       self.truelat1  = float(config.get('grid_truelat1', '39.0'))
-       self.truelat2  = float(config.get('grid_truelat2', '50.0'))
-       self.stdlon    = float(config.get('grid_stdlon', '-125.0'))
-       self.dx        = float(config.get('grid_dx', '9000.0'))
-       self.latinc    = float(config.get('grid_latinc', '0.08'))
-       self.loninc    = float(config.get('grid_loninc', '0.08'))
-       self.lat0      = float(config.get('grid_lat0', '51.0'))
-       self.lon0      = float(config.get('grid_lon0', '180.0'))
-       self.knowni    = float(config.get('knowni', '0.0'))
-       self.knownj    = float(config.get('knownj', '0.0'))
+       self.grid_type = config['model'].get('grid_type','Cassini')
+       self.truelat1  = float(config['model'].get('grid_truelat1', '39.0'))
+       self.truelat2  = float(config['model'].get('grid_truelat2', '50.0'))
+       self.stdlon    = float(config['model'].get('grid_stdlon', '-125.0'))
+       self.dx        = float(config['model'].get('grid_dx', '9000.0'))
+       self.latinc    = float(config['model'].get('grid_latinc', '0.08'))
+       self.loninc    = float(config['model'].get('grid_loninc', '0.08'))
+       self.lat0      = float(config['model'].get('grid_lat0', '51.0'))
+       self.lon0      = float(config['model'].get('grid_lon0', '180.0'))
+       self.knowni    = float(config['model'].get('knowni', '0.0'))
+       self.knownj    = float(config['model'].get('knownj', '0.0'))
        self.lat1      = self.domdict.latitude[0,0].values
        self.lon1      = self.domdict.longitude[0,0].values
 
@@ -253,9 +253,9 @@ class ReadGribFiles:
     def member_name(self, member):
 
        if self.filetype == 'minghua':
-          file_name = "{0}/{1}/{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['model_dir'],self.datea,self.enslist[member],self.fdatestr)
+          file_name = "{0}/{1}/{2}/wrfout_d01_{3}_subset_variables.nc".format(self.config['locations']['model_dir'],self.datea,self.enslist[member],self.fdatestr)
        elif self.filetype == 'westwrf':
-          file_name = "{0}/{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'].replace("{yyyymmddhh}",self.datea),self.datea,self.enslist[member],self.fdatestr)
+          file_name = "{0}/{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir']['locations'].replace("{yyyymmddhh}",self.datea),self.datea,self.enslist[member],self.fdatestr)
 #          file_name = "{0}/{1}/ecm{2}/wrfcf_d01_{3}.nc".format(self.config['model_dir'],self.datea,fmem,self.fdatestr)
 
        return file_name

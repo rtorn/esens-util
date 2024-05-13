@@ -23,29 +23,29 @@ def stage_grib_files(datea, config):
         config  (dict):  The dictionary with configuration information
     '''
 
-#    freq = config.get('fcst_hour_int', 12)
+#    freq = config['model'].get('fcst_hour_int', 12)
     freq = 6
-    fmax = config.get('fcst_hour_max', 120)
+    fmax = config['model'].get('fcst_hour_max', 120)
 
     init    = dt.datetime.strptime(datea, '%Y%m%d%H')
     init_s  = init.strftime("%y%j%H")
 
     #  Make the work directory if it does not exist
-    if not os.path.isdir(config['work_dir']):
+    if not os.path.isdir(config['locations']['work_dir']):
        try:
-          os.makedirs(config['work_dir'])
+          os.makedirs(config['locations']['work_dir'])
        except OSError as e:
           raise e
 
     for fhr in range(0, int(fmax)+int(freq), int(freq)):
 
        fbase = "{0}000{1}".format(init_s, '%0.3i' % fhr)
-       fout  = '{0}/f{1}.grb2'.format(config['work_dir'],'%0.3i' % fhr)
+       fout  = '{0}/f{1}.grb2'.format(config['locations']['work_dir'],'%0.3i' % fhr)
 
        if not os.path.isfile(fout):
 
           #  Wait for the source file to be present 
-          infile = '{0}/gec00/{1}'.format(config['model_dir'],fbase)
+          infile = '{0}/gec00/{1}'.format(config['locations']['model_dir'],fbase)
           while not os.path.exists(infile):
              time.sleep(20.1)
 
@@ -68,18 +68,18 @@ def stage_grib_files(datea, config):
              os.system('wgrib2 -s {0} | grep -e \"TMP:300 mb\" -e \"TMP:400 mb\" -e \"RH:300 mb\" -e \"RH:400 mb\" | wgrib2 -fix_ncep -i -append {0} -grib {1}'.format(falt,fout))
 
     #  Grab precipitation ooutput at more frequent intervals
-    fmin = config.get('precip_hour_min', 6)
-    freq = config.get('precip_hour_int', 12)
-    fmax = config.get('precip_hour_max', -12)  
+    fmin = config['model'].get('precip_hour_min', 6)
+    freq = config['model'].get('precip_hour_int', 12)
+    fmax = config['model'].get('precip_hour_max', -12)  
 
     for fhr in range(fmin, int(fmax)+int(freq), int(freq)):
 
        fbase = "{0}000{1}".format(init_s, '%0.3i' % fhr)
-       fout  = '{0}/f{1}.grb2'.format(config['work_dir'],'%0.3i' % fhr)
+       fout  = '{0}/f{1}.grb2'.format(config['locations']['work_dir'],'%0.3i' % fhr)
 
        if not os.path.isfile(fout):
 
-          for n in range(int(config['num_ens'])+1):
+          for n in range(int(config['model']['num_ens'])+1):
 
              #  Construct the grib file dictionary for a particular forecast hour
              if n > 0:
@@ -88,7 +88,7 @@ def stage_grib_files(datea, config):
                 fdir = "gec00"
 
              #  read a few extra fields from the alternate files
-             falt = '{0}/{1}/{2}'.format(config['model_dir'],fdir,fbase)
+             falt = '{0}/{1}/{2}'.format(config['locations']['model_dir'],fdir,fbase)
              os.system('wgrib2 -s {0} | grep -e \"APCP\" | wgrib2 -fix_ncep -i -append {0} -grib {1}'.format(falt,fout))
 
 
@@ -125,7 +125,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
     init    = dt.datetime.strptime(datea, '%Y%m%d%H')
     datef   = init + dt.timedelta(hours=6)
 
-    src  = '{0}/{1}.a{2}.dat'.format(config['atcf_dir'],datef.strftime('%Y%m%d%H'),bbnnyyyy)
+    src  = '{0}/{1}.a{2}.dat'.format(config['locations']['atcf_dir'],datef.strftime('%Y%m%d%H'),bbnnyyyy)
     print('ATCF file',datef.strftime('%Y%m%d%H'),src)
 
 #    #  Wait for the ensemble ATCF information to be placed in the file
@@ -136,7 +136,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
 #    while ( (time.time() - os.path.getmtime(src)) < 60 ):
 #       time.sleep(10)
 
-    for n in range(int(config['num_ens']) + 1):
+    for n in range(int(config['model']['num_ens']) + 1):
 
        if ( n > 0 ):
           modid = 'AP'
@@ -144,7 +144,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
           modid = 'AC'
 
        nn = '%0.2i' % n
-       file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
+       file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
 
        #  If the specific member's ATCF file does not exist, copy from the source file with sed.
        if not os.path.isfile(file_name):
@@ -173,19 +173,19 @@ def stage_best_file(bbnnyyyy, config):
 
     try:    #  Look for the data in the real-time directory
 
-      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config.get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
-      fileo = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config['locations'].get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
+      fileo = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       fileo.write(filei.read())
       filei.close()
       fileo.close()
 
     except:    #  If the file is not present in the real-time directory, look in the archive.
 
-      src  = '{0}/{1}/b{2}.dat.gz'.format(config.get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
+      src  = '{0}/{1}/b{2}.dat.gz'.format(config['locations'].get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
 
       #  Unzip the file from the NHC server, write the file to the work directory
       gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-      uzfile = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      uzfile = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       uzfile.write(gzfile.read())
       gzfile.close()
       uzfile.close()
@@ -215,7 +215,7 @@ class ReadGribFiles:
         self.grib_dict = {}
 
         #  Construct the grib file dictionary for a particular forecast hour
-        file_name = "{0}/f{1}.grb2".format(config['work_dir'], '%0.3i' % fhr)
+        file_name = "{0}/f{1}.grb2".format(config['locations']['work_dir'], '%0.3i' % fhr)
         try:  
            ds = cfgrib.open_datasets(file_name)
 
@@ -246,7 +246,7 @@ class ReadGribFiles:
               self.grib_dict[key].coords['longitude']  = (self.grib_dict[key].coords['longitude'] + 180) % 360 - 180
               self.grib_dict[key] = self.grib_dict[key].sortby('longitude')
 
-        if config.get('flip_lon','False') == 'True':
+        if config['model'].get('flip_lon','False') == 'True':
            for key in self.grib_dict:
               self.grib_dict[key].coords['longitude'] = (self.grib_dict[key].coords['longitude'] + 360.) % 360.
               self.grib_dict[key] = self.grib_dict[key].sortby('longitude')

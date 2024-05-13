@@ -26,13 +26,13 @@ def stage_grib_files(datea, config):
         config  (dict):  The dictionary with configuration information
     '''
 
-    freq = config.get('input_hour_int', 6)
-    fmax = config.get('fcst_hour_max', 120)
+    freq = config['model'].get('input_hour_int', 6)
+    fmax = config['model'].get('fcst_hour_max', 120)
 
     #  Make the work directory if it does not exist
-    if not os.path.isdir(config['work_dir']):
+    if not os.path.isdir(config['locations']['work_dir']):
        try:
-          os.makedirs(config['work_dir'])
+          os.makedirs(config['locations']['work_dir'])
        except OSError as e:
           raise e
 
@@ -46,8 +46,8 @@ def stage_grib_files(datea, config):
        datef_s = datef.strftime("%m%d%H%M")
 
        grib_file = 'E1E{0}{1}1'.format(str(init_s), str(datef_s))
-       infile    = '{0}/{1}'.format(config['model_dir'],grib_file)
-       outfile   = '{0}/{1}'.format(config['work_dir'],grib_file)
+       infile    = '{0}/{1}'.format(config['locations']['model_dir'],grib_file)
+       outfile   = '{0}/{1}'.format(config['locations']['work_dir'],grib_file)
 
        #  Only try to copy if the file is not there
        if ( not os.path.isfile(outfile) ):
@@ -86,10 +86,10 @@ def stage_atcf_files(datea, bbnnyyyy, config):
         config     (dict):  The dictionary with configuration information
     '''
 
-    src  = '{0}/a{1}.dat'.format(config['atcf_dir'],bbnnyyyy)
-    nens = int(config['num_ens'])
+    src  = '{0}/a{1}.dat'.format(config['locations']['atcf_dir'],bbnnyyyy)
+    nens = int(config['model']['num_ens'])
 
-    if not os.path.isfile('{0}/atcf_{1}.dat'.format(config['work_dir'],'%0.2i' % nens)):
+    if not os.path.isfile('{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],'%0.2i' % nens)):
 
        #  Wait for the source file to be present 
        while not os.path.exists(src):
@@ -106,7 +106,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
        for n in range(nens + 1):
 
           nn = '%0.2i' % n
-          file_name = '{0}/atcf_{1}.dat'.format(config['work_dir'],nn)
+          file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
 
           fo = open(file_name,"w")
           fo.write(os.popen('sed -ne /{0}/p {1} | sed -ne /EE{2}/p'.format(datea,src,nn)).read())
@@ -131,19 +131,19 @@ def stage_best_file(bbnnyyyy, config):
 
     try:    #  Look for the data in the real-time directory
  
-      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config.get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
-      fileo = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      filei = urllib.request.urlopen('{0}/b{1}.dat'.format(config['locations'].get('best_dir','https://ftp.nhc.noaa.gov/atcf/btk'),bbnnyyyy))
+      fileo = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       fileo.write(filei.read())
       filei.close()
       fileo.close()
 
     except:    #  If the file is not present in the real-time directory, look in the archive.
 
-      src  = '{0}/{1}/b{2}.dat.gz'.format(config.get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
+      src  = '{0}/{1}/b{2}.dat.gz'.format(config['locations'].get('best_dir_alt','https://ftp.nhc.noaa.gov/atcf/archive'),bbnnyyyy[4:8],bbnnyyyy)
 
       #  Unzip the file from the NHC server, write the file to the work directory
       gzfile = gzip.GzipFile(fileobj=urllib.request.urlopen(src))
-      uzfile = open('{0}/b{1}.dat'.format(config['work_dir'],bbnnyyyy), 'wb')
+      uzfile = open('{0}/b{1}.dat'.format(config['locations']['work_dir'],bbnnyyyy), 'wb')
       uzfile.write(gzfile.read())
       gzfile.close()
       uzfile.close()
@@ -172,7 +172,7 @@ class ReadGribFiles:
         datef_s = datef.strftime("%m%d%H%M")
 
         #  Construct the grib file dictionary for a particular forecast hour
-        file_name = os.path.join(config['work_dir'], "E1E{0}{1}1".format(str(init_s), str(datef_s)))
+        file_name = os.path.join(config['locations']['work_dir'], "E1E{0}{1}1".format(str(init_s), str(datef_s)))
         try:  
            ds = cfgrib.open_datasets(file_name)
            self.grib_dict = {}
@@ -203,7 +203,7 @@ class ReadGribFiles:
            if np.max(self.grib_dict[key].coords['longitude']) > 180.:
               self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=(((self.grib_dict[key].longitude + 180.) % 360.) - 180.)).sortby('longitude')
 
-        if config.get('flip_lon','False') == 'True':
+        if config['model'].get('flip_lon','False') == 'True':
            for key in self.grib_dict:
               self.grib_dict[key] = self.grib_dict[key].assign_coords(longitude=((self.grib_dict[key].coords['longitude'] + 360.) % 360.)).sortby('longitude')
 
