@@ -89,9 +89,9 @@ def addDrop(dropfile, plt, plotDict):
         ds.columns = ['year','month','day','hour','minute','latitude','longitude','pressure']
         if eval(plotDict.get('flip_lon','False')):
            ds['longitude'] = (360. - ds['longitude']) % 360
-        else:
-           ds['longitude'] = -ds['longitude']
-        plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, transform=ccrs.PlateCarree())
+#        else:
+#           ds['longitude'] = -ds['longitude']
+        plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, zorder=20, transform=ccrs.PlateCarree())
         del ds
 
 
