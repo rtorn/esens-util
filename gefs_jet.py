@@ -53,9 +53,9 @@ def stage_grib_files(datea, config):
           while ( (time.time() - os.path.getmtime(infile)) < 60 ):
              time.sleep(10)
 
-          os.system('cat {0}/gec00/{1} {0}/gep*/{1} >& {2}'.format(config['model_dir'],fbase,fout))
+          os.system('cat {0}/gec00/{1} {0}/gep*/{1} >& {2}'.format(config['locations']['model_dir'],fbase,fout))
 
-          for n in range(int(config['num_ens'])+1):
+          for n in range(int(config['model']['num_ens'])+1):
 
              #  Construct the grib file dictionary for a particular forecast hour
              if n > 0:
@@ -64,7 +64,7 @@ def stage_grib_files(datea, config):
                 fdir = "gec00"
 
              #  read a few extra fields from the alternate files
-             falt = '{0}/pgrb2b/{1}/{2}'.format(config['model_dir'],fdir,fbase)
+             falt = '{0}/pgrb2b/{1}/{2}'.format(config['locations']['model_dir'],fdir,fbase)
              os.system('wgrib2 -s {0} | grep -e \"TMP:300 mb\" -e \"TMP:400 mb\" -e \"RH:300 mb\" -e \"RH:400 mb\" | wgrib2 -fix_ncep -i -append {0} -grib {1}'.format(falt,fout))
 
     #  Grab precipitation ooutput at more frequent intervals
