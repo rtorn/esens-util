@@ -414,6 +414,10 @@ class ReadGribFiles:
            if np.max(st_dict[key].coords['longitude']) > 180:
               st_dict[key] = st_dict[key].assign_coords(longitude=((st_dict[key].coords['longitude'] + 180) % 360 - 180)).sortby('longitude')
 
+       if vdict.get('flip_lon','False') == 'True':
+          for key in st_dict:
+             st_dict[key] = st_dict[key].assign_coords(longitude=((st_dict[key].coords['longitude'] + 360.) % 360.)).sortby('longitude')
+
        vout = st_dict[static_dict[varname]].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
                                                 longitude=slice(vdict['lon_start'], vdict['lon_end']))
 
