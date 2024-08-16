@@ -384,6 +384,11 @@ class ReadGribFiles:
        return(vout)
 
 
+    def close_files(self):
+
+       del self.grib_dict, self.grib_dictb
+
+
     def read_static_field(self, static_file, varname, vdict):
        '''
        This is a generic routine that is used to read a static field from a file from 
