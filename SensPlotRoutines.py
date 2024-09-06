@@ -308,24 +308,30 @@ def background_map(proj, lon1, lon2, lat1, lat2, DomDict):
 
   else:
 
-     if lon1 > 180. or lon2 > 180.:
-       lon1 = lon1 - 360.
-       lon2 = lon2 - 360.
+#     if lon1 > 180. or lon2 > 180.:
+#       lon1 = lon1 - 360.
+#       lon2 = lon2 - 360.
 
      ax.set_extent([lon1, lon2, lat1, lat2], ccrs.PlateCarree())
 
      gridInt = float(DomDict.get('grid_interval', 10.))
 
-     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
-                     linewidth=1, color='gray', alpha=0.5, linestyle='-')
-     gl.top_labels = None
+     lonarr = np.arange(-180.,360.,gridInt)
+     lonarr = np.delete(lonarr, np.where(np.logical_or(lonarr <= lon1, lonarr >= lon2)))
+     if lon2 > 180.:
+        lonarr = ((lonarr[:] + 180.) % 360.) - 180.
+
+     latarr = np.arange(-90.+gridInt,90.,gridInt)
+     latarr = np.delete(latarr, np.where(np.logical_or(latarr <= lat1, latarr >= lat2)))
+
+     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, x_inline=False, y_inline=False, \
+                     linewidth=1, color='gray', alpha=0.5, linestyle='-', xlocs=lonarr, ylocs=latarr)
+     gl.top_labels = False
      gl.bottom_labels = eval(DomDict.get('bottom_labels','True'))
-     gl.left_labels = eval(DomDict.get('left_labels','None'))
+     gl.left_labels = eval(DomDict.get('left_labels','False'))
      gl.right_labels = eval(DomDict.get('right_labels','True'))
-     gl.xlocator = mticker.FixedLocator(np.arange(-180.,180.,gridInt))
      gl.xformatter = LONGITUDE_FORMATTER
      gl.xlabel_style = {'size': 12, 'color': 'gray'}
-     gl.ylocator = mticker.FixedLocator(np.arange(-90.+gridInt,90.,gridInt))
      gl.yformatter = LATITUDE_FORMATTER
      gl.ylabel_style = {'size': 12, 'color': 'gray'}
 
@@ -522,7 +528,7 @@ def plotScalarSens(lat, lon, sens, emea, sigv, fileout, plotDict):
     plt.title(plotDict['plotTitle'])
 
   if tcLat != -9999. and tcLon != -9999.:
-    plt.plot(tcLon, tcLat, 'o', color='black', markersize=10);
+    plt.plot(tcLon, tcLat, 'o', color='black', markersize=10, transform=ccrs.PlateCarree())
 
   #  Add range rings to the file if desired
   if plotDict.get('range_rings', 'False')=='True' and \
@@ -602,7 +608,7 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
     plt.title(plotDict['plotTitle'])
 
   if tcLat != -9999. and tcLon != -9999.:
-    plt.plot(tcLon, tcLat, 'o', color='black', markersize=10)
+    plt.plot(tcLon, tcLat, 'o', color='black', markersize=10, transform=ccrs.PlateCarree())
 
   #  Add range rings to the file if desired
   if plotDict.get('range_rings', 'False')=='True' and \
