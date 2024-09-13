@@ -388,7 +388,10 @@ class ReadGribFiles:
                                                latitude=slice(vdict['lat_start'], vdict['lat_end']), \
                                                longitude=slice(vdict['lon_start'], vdict['lon_end']))
 
-       return(vout)
+       if 'valid_time' in list(vout.coords):
+          return(vout.reset_coords('valid_time', drop=True))
+       else:
+          return(vout)
 
 
     def read_static_field(self, static_file, varname, vdict):
