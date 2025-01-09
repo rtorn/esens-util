@@ -599,7 +599,7 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
 
   pltf = plt.contourf(lon[:],lat[:],sens,compd_range,cmap=cmap,extend='both',transform=ccrs.PlateCarree())
   pltm = plt.barbs(lon[::barbInt], lat[::barbInt], umea[::barbInt,::barbInt]*1.94, vmea[::barbInt,::barbInt]*1.94, \
-                    pivot='middle', length=6, linewidths=0.2, zorder=10, transform=ccrs.PlateCarree())
+                    pivot='middle', length=float(plotDict.get('barb_length', 6)), linewidths=0.3, zorder=10, transform=ccrs.PlateCarree())
   plts = plt.contour(lon[:],lat[:],sigv,[-sigval, sigval], linewidths=0.5, colors='k', transform=ccrs.PlateCarree())
   if plotDict.get('zero_non_sig_sens','False') == 'False':
      plth = plt.contourf(lon[:],lat[:],sigv,[-sigval, sigval],hatches=['..', None, '..'], colors='none', extend='both', transform=ccrs.PlateCarree())
