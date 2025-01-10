@@ -178,6 +178,10 @@ class ReadGribFiles:
 
         self.has_specific_humidity = False
 
+        #  Determine if information on frozen preciptation is present (needs to be implemented here).
+        self.has_precip_category = False
+        self.has_frozen_fraction = False
+
         self.has_total_precip = False
 
         self.nens = len(self.memlist)
