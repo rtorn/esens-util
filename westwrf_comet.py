@@ -248,6 +248,10 @@ class ReadGribFiles:
        else:
           self.has_specific_humidity = False
 
+       #  Determine if frozen precipitation information is present (not implemented yet)
+       self.has_precip_category = False
+       self.has_frozen_fraction = False
+
        self.has_total_precip = True
 
 

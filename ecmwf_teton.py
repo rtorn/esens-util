@@ -212,6 +212,11 @@ class ReadGribFiles:
         else:
            self.has_specific_humidity = False
 
+        self.has_frozen_fraction = False
+        self.has_precip_category = False
+        if '{0}_cf'.format(self.var_dict['precip_type']) in self.grib_dict:
+           self.has_precip_category = True
+
         self.has_total_precip = True
 
         for var in self.var_dict.values():

@@ -210,15 +210,17 @@ class ReadGribFiles:
            raise RuntimeError('Failed to open {0}'.format(file_name)) from exc
 
         #  This is a dictionary that maps from generic variable names to the name of variable in file
-        self.var_dict = {'zonal_wind': 'u',          \
-                         'meridional_wind': 'v',     \
-                         'zonal_wind_10m': 'u10',      \
-                         'meridional_wind_10m': 'v10', \
-                         'geopotential_height': 'gh',  \
-                         'temperature': 't',          \
-                         'specific_humidity': 'q',    \
-                         'relative_humidity': 'rhprs',     \
-                         'sea_level_pressure': 'msl', \
+        self.var_dict = {'zonal_wind': 'u',               \
+                         'meridional_wind': 'v',          \
+                         'zonal_wind_10m': 'u10',         \
+                         'meridional_wind_10m': 'v10',    \
+                         'geopotential_height': 'gh',     \
+                         'temperature': 't',              \
+                         'specific_humidity': 'q',        \
+                         'relative_humidity': 'rhprs',    \
+                         'sea_level_pressure': 'msl',     \
+                         'snow_fraction': 'csnow',        \
+                         'freeze_rain_fraction': 'cfrzr', \
                          'precipitation': 'tp' }
 
         for key in self.grib_dict:
@@ -234,6 +236,13 @@ class ReadGribFiles:
         self.has_specific_humidity = True
 #        else:
 #           self.has_specific_humidity = False
+
+        #  Determine if information on frozen preciptation is present (GEFS has fractions).
+        self.has_precip_category = False
+        self.has_frozen_fraction = False
+        if '{0}_cf'.format(self.var_dict['snow_fraction']) in self.grib_dict and \
+           '{0}_cf'.format(self.var_dict['freeze_rain_fraction']) in self.grib_dict:
+           self.has_frozen_fraction = True
 
         self.has_total_precip = True
 
