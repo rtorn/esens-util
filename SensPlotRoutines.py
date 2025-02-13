@@ -109,16 +109,23 @@ def addRangeRings(cen_lat, cen_lon, lat, lon, plt, plotDict):
       plotDict (dict.):  dictionary that contains configuration options
   '''
 
-  lonarr, latarr = np.meshgrid(lon, lat)
-  tcdist = great_circle(cen_lon, cen_lat, lonarr, latarr)
-
   if 'ring_values' in plotDict:
-    rrings = json.loads(plotDict.get('ring_values'))
+    rinput = [e.strip() for e in plotDict.get('ring_values').split(',')]
   else:
-    rrings = [500., 1000., 1500.]
+    rinput = [500., 1000., 1500.]
 
-  pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=1.0,colors='gray',transform=ccrs.PlateCarree())
-  lab = plt.clabel(pltrr, [])
+  for i in range(len(cen_lat)):  
+
+    lonarr, latarr = np.meshgrid(lon, lat)
+    tcdist = great_circle(cen_lon[i], cen_lat[i], lonarr, latarr)
+
+    if len(cen_lat) > 1:
+      rrings = [rinput[i]]
+    else:
+      rrings = rinput
+
+    pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=1.0,colors='gray',transform=ccrs.PlateCarree())
+    lab = plt.clabel(pltrr, [])
 
 
 def addRawin(rawinfile, plt, plotDict):
