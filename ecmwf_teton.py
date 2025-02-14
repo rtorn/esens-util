@@ -196,6 +196,7 @@ class ReadGribFiles:
                          'relative_humidity': 'r',    \
                          'specific_humidity': 'q',    \
                          'sea_level_pressure': 'msl', \
+                         'iwv': 'tcwv',               \
                          'precipitation': 'tp',       \
                          'precip_type': 'ptype'}
 
