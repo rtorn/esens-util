@@ -323,24 +323,26 @@ def background_map(proj, lon1, lon2, lat1, lat2, DomDict):
 
      gridInt = float(DomDict.get('grid_interval', 10.))
 
-     lonarr = np.arange(-180.,360.,gridInt)
-     lonarr = np.delete(lonarr, np.where(np.logical_or(lonarr <= lon1, lonarr >= lon2)))
-     if lon2 > 180.:
-        lonarr = ((lonarr[:] + 180.) % 360.) - 180.
+     if gridInt > 0:
 
-     latarr = np.arange(-90.+gridInt,90.,gridInt)
-     latarr = np.delete(latarr, np.where(np.logical_or(latarr <= lat1, latarr >= lat2)))
+       lonarr = np.arange(-180.,360.,gridInt)
+       lonarr = np.delete(lonarr, np.where(np.logical_or(lonarr <= lon1, lonarr >= lon2)))
+       if lon2 > 180.:
+         lonarr = ((lonarr[:] + 180.) % 360.) - 180.
 
-     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, x_inline=False, y_inline=False, \
-                     linewidth=1, color='gray', alpha=0.5, linestyle='-', xlocs=lonarr, ylocs=latarr)
-     gl.top_labels = False
-     gl.bottom_labels = eval(DomDict.get('bottom_labels','True'))
-     gl.left_labels = eval(DomDict.get('left_labels','False'))
-     gl.right_labels = eval(DomDict.get('right_labels','True'))
-     gl.xformatter = LONGITUDE_FORMATTER
-     gl.xlabel_style = {'size': 12, 'color': 'gray'}
-     gl.yformatter = LATITUDE_FORMATTER
-     gl.ylabel_style = {'size': 12, 'color': 'gray'}
+       latarr = np.arange(-90.+gridInt,90.,gridInt)
+       latarr = np.delete(latarr, np.where(np.logical_or(latarr <= lat1, latarr >= lat2)))
+
+       gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True, x_inline=False, y_inline=False, \
+                       linewidth=1, color='gray', alpha=0.5, linestyle='-', xlocs=lonarr, ylocs=latarr)
+       gl.top_labels = False
+       gl.bottom_labels = eval(DomDict.get('bottom_labels','True'))
+       gl.left_labels = eval(DomDict.get('left_labels','False'))
+       gl.right_labels = eval(DomDict.get('right_labels','True'))
+       gl.xformatter = LONGITUDE_FORMATTER
+       gl.xlabel_style = {'size': 12, 'color': 'gray'}
+       gl.yformatter = LATITUDE_FORMATTER
+       gl.ylabel_style = {'size': 12, 'color': 'gray'}
 
   return ax
 
