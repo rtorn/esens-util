@@ -545,6 +545,7 @@ def plotScalarSens(lat, lon, sens, emea, sigv, fileout, plotDict):
     addRangeRings(plotDict['ring_center_lat'], plotDict['ring_center_lon'], lat, lon, plt, plotDict)
 
   addDrop(plotDict.get("dropsonde_file","null"), plt, plotDict)
+  addTurns(plotDict.get("turns_file","null"), plt, plotDict)
 
   addBuoy(plotDict.get("buoy1_file","null"), plotDict.get("buoy2_file","null"), plt, plotDict)
 
@@ -625,6 +626,7 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
     addRangeRings(plotDict['ring_center_lat'], plotDict['ring_center_lon'], lat, lon, plt, plotDict)    
 
   addDrop(plotDict.get("dropsonde_file","null"), plt, plotDict)
+  addTurns(plotDict.get("turns_file","null"), plt, plotDict)
 
   #  Add colorbar to the plot
   cbar = plt.colorbar(pltf, fraction=0.10, aspect=45., pad=0.04, shrink=float(plotDict.get('cbar_shrink', '1.0')), \
