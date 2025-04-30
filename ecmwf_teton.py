@@ -1,15 +1,17 @@
 import os
 import time
+import importlib
 import shutil
 import sys
 import cfgrib
 import datetime as dt
 import glob
 import gzip
-import urllib
-import pandas as pd
+from urllib.request import urlopen
 import numpy as np
 import xarray as xr
+
+from SensPlotRoutines import great_circle
 
 def stage_grib_files(datea, config):
     '''
@@ -86,31 +88,150 @@ def stage_atcf_files(datea, bbnnyyyy, config):
         config     (dict):  The dictionary with configuration information
     '''
 
+    gfssrc = ['https://ftp.nhc.noaa.gov/atcf/aid_public', \
+              'https://ftp.nhc.noaa.gov/atcf/archive/{0}'.format(bbnnyyyy[4:8]), \
+              'https://ftp.nhc.noaa.gov/atcf/archive/{0}/invests'.format(bbnnyyyy[4:8])]
+
     src  = '{0}/a{1}.dat'.format(config['locations']['atcf_dir'],bbnnyyyy)
     nens = int(config['model']['num_ens'])
 
     if not os.path.isfile('{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],'%0.2i' % nens)):
 
-       #  Wait for the source file to be present 
-       while not os.path.exists(src):
-          time.sleep(20.5)
+       #  If this is a numbered storm, look for an ATCF file
+       if int(bbnnyyyy[2:4]) > 50:
 
-       #  Wait for the ensemble ATCF information to be placed in the file
-       while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
-          time.sleep(20.7)
+          #  Wait for the source file to be present 
+          while not os.path.exists(src):
+             time.sleep(20.5)
 
-       #  Wait for the file to be finished being copied
-       while ( (time.time() - os.path.getmtime(src)) < 60 ):
-          time.sleep(10)
+          #  Wait for the ensemble ATCF information to be placed in the file
+          while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
+             time.sleep(20.7)
 
-       for n in range(nens + 1):
+          #  Wait for the file to be finished being copied
+          while ( (time.time() - os.path.getmtime(src)) < 60 ):
+             time.sleep(10)
 
-          nn = '%0.2i' % n
-          file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
+          for n in range(nens + 1):
 
-          fo = open(file_name,"w")
-          fo.write(os.popen('sed -ne /{0}/p {1} | sed -ne /EE{2}/p'.format(datea,src,nn)).read())
-          fo.close()
+             nn = '%0.2i' % n
+             file_name = '{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],nn)
+
+             fo = open(file_name,"w")
+             fo.write(os.popen('sed -ne /{0}/p {1} | sed -ne /EE{2}/p'.format(datea,src,nn)).read())
+             fo.close()
+
+       #  Otherwise, go through individual tracker files to find INVEST areas.  Use GEFS as guess 
+       else:
+
+          if len(glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea))) < 1:
+             time.sleep(20.7)
+
+          for infile in glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea)):
+             while ( (time.time() - os.path.getmtime(infile)) < 60 ):
+                time.sleep(10) 
+
+          atools = importlib.import_module('atcf_tools')
+
+          negfs = 31
+          gfsid = ['AC00']
+          for n in range(1,negfs):
+             gfsid.append('AP{0}'.format('%0.2i' % n))
+
+          ecmid = []
+          for n in range(0,nens+1):
+             ecmid.append('EE{0}'.format('%0.2i' % n))
+
+          #  Unzip the file from the NHC server, write the file to the work directory
+          for indir in gfssrc:
+             try:
+                gzfile = gzip.GzipFile(fileobj=urlopen('{0}/a{1}.dat.gz'.format(indir,bbnnyyyy)))
+             except:
+                continue
+          uzfile = open('a{0}.dat'.format(bbnnyyyy), 'wb')
+          uzfile.write(gzfile.read())
+          gzfile.close()
+          uzfile.close()
+
+          gdata = atools.ReadATCFData('a{0}.dat'.format(bbnnyyyy), fcstid=gfsid, init=datea)
+
+          fhrvec = np.arange(0, 96+6, 6)
+          t_lat  = np.zeros(len(fhrvec))
+          t_lon  = np.zeros(len(fhrvec))
+          edist  = np.zeros(len(fhrvec))
+
+          for t in range(len(fhrvec)):
+
+             lat, lon = gdata.ens_lat_lon_time(fhrvec[t])
+
+             #  Compute the ensemble mean for members that have lat/lon values at this time
+             e_cnt    = 0
+             t_lat[t] = 0.0
+             t_lon[t] = 0.0
+             for n in range(negfs):
+
+                if lat[n] != gdata.missing and lon[n] != gdata.missing:
+
+                   e_cnt = e_cnt + 1
+                   if bbnnyyyy[0:2] == "ep" or bbnnyyyy[0:2] == "cp":
+                      lon[n] = (lon[n] + 360.) % 360.
+
+                   t_lon[t] = t_lon[t] + lon[n]
+                   t_lat[t] = t_lat[t] + lat[n]
+
+             if e_cnt >= 3:   #  Only consider if min. number of members is present
+                t_lon[t] = t_lon[t] / e_cnt
+                t_lat[t] = t_lat[t] / e_cnt
+             else:
+                t_lon[t] = gdata.missing
+                t_lat[t] = gdata.missing
+
+          os.remove('a{0}.dat'.format(bbnnyyyy))
+
+          bmatch = [str() for c in 'c' * len(ecmid)]
+          maxens = np.ones(len(ecmid))[:] * 99999.
+
+          for trackfile in glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea)):
+
+             for n in range(len(ecmid)):
+
+                maxdist = -99999.
+                edata = atools.ReadATCFData(trackfile, fcstid=[ecmid[n]], init=datea)
+
+                for t in range(len(fhrvec)):
+
+                   late, lone = edata.ens_lat_lon_time(fhrvec[t])
+
+                   if late != edata.missing and lone != edata.missing:
+
+                      e_cnt = e_cnt + 1
+                      if bbnnyyyy[0:2] == "ep" or bbnnyyyy[0:2] == "cp":
+                         lon[n] = (lon[n] + 360.) % 360.
+                      edist[t] = great_circle(lone,late,np.array([t_lon[t]]),np.array([t_lat[t]]))[0]
+                      maxdist = np.max([edist[t],maxdist])
+
+                   else:
+
+                      edist[t] = 99999.
+
+                if maxdist <= maxens[n] and maxdist <= 1200. and maxdist >= 0.:
+                   bmatch[n] = trackfile
+                   maxens[n] = maxdist
+
+                del edata
+
+          for n in range(len(ecmid)):
+
+             if bmatch[n] != '':
+
+                with open(bmatch[n], 'r') as file:
+                   lines = file.readlines()
+
+                with open('{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],'%0.2i' % n), 'w') as file:
+                   for line in lines:
+                      if ecmid[n] in line:
+                         file.write(line.replace(line[4:7],'{0},'.format(bbnnyyyy[2:4])))
+
 
 
 def stage_best_file(bbnnyyyy, config):
