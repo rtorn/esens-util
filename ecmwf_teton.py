@@ -98,7 +98,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
     if not os.path.isfile('{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],'%0.2i' % nens)):
 
        #  If this is a numbered storm, look for an ATCF file
-       if int(bbnnyyyy[2:4]) > 50:
+       if int(bbnnyyyy[2:4]) < 50:
 
           #  Wait for the source file to be present 
           while not os.path.exists(src):
@@ -124,10 +124,17 @@ def stage_atcf_files(datea, bbnnyyyy, config):
        #  Otherwise, go through individual tracker files to find INVEST areas.  Use GEFS as guess 
        else:
 
-          if len(glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea))) < 1:
+          if bbnnyyyy[0:2] == "al":
+            basin = 'L'
+          elif bbnnyyyy[0:2] == "ep":
+            basin = 'E'
+          elif bbnnyyyy[0:2] == "cp":
+            basin = 'E'
+
+          while len(glob.glob('{0}/*{1}0000*{2}_*.dat'.format(config['locations']['atcf_dir'], datea, basin))) < 1:
              time.sleep(20.7)
 
-          for infile in glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea)):
+          for infile in glob.glob('{0}/*{1}0000*{2}_*.dat'.format(config['locations']['atcf_dir'], datea, basin)):
              while ( (time.time() - os.path.getmtime(infile)) < 60 ):
                 time.sleep(10) 
 
@@ -191,7 +198,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
           bmatch = [str() for c in 'c' * len(ecmid)]
           maxens = np.ones(len(ecmid))[:] * 99999.
 
-          for trackfile in glob.glob('{0}/*{1}0000*L_*.dat'.format(config['locations']['atcf_dir'], datea)):
+          for trackfile in glob.glob('{0}/*{1}0000*{2}_*.dat'.format(config['locations']['atcf_dir'], datea, basin)):
 
              for n in range(len(ecmid)):
 
@@ -206,7 +213,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
 
                       e_cnt = e_cnt + 1
                       if bbnnyyyy[0:2] == "ep" or bbnnyyyy[0:2] == "cp":
-                         lon[n] = (lon[n] + 360.) % 360.
+                         lone = (lone + 360.) % 360.
                       edist[t] = great_circle(lone,late,np.array([t_lon[t]]),np.array([t_lat[t]]))[0]
                       maxdist = np.max([edist[t],maxdist])
 
@@ -232,6 +239,10 @@ def stage_atcf_files(datea, bbnnyyyy, config):
                       if ecmid[n] in line:
                          file.write(line.replace(line[4:7],'{0},'.format(bbnnyyyy[2:4])))
 
+             else:
+
+                f = open('{0}/atcf_{1}.dat'.format(config['locations']['work_dir'],'%0.2i' % n), 'w')
+                f.close()
 
 
 def stage_best_file(bbnnyyyy, config):
