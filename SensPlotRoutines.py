@@ -25,7 +25,7 @@ def addBuoy(buoy1file, buoy2file, plt, plotDict):
 
   if os.path.isfile(buoy1file):
 
-     ds = pd.read_csv(filepath_or_buffer=buoy1file, sep = '\s+', header=None, usecols=[1, 3, 4])
+     ds = pd.read_csv(filepath_or_buffer=buoy1file, sep='\\s+', header=None, usecols=[1, 3, 4])
      ds.columns = ['date','latitude','longitude']
      plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, zorder=15, markeredgecolor='gray', transform=ccrs.PlateCarree())
      del ds
@@ -36,7 +36,7 @@ def addBuoy(buoy1file, buoy2file, plt, plotDict):
 
   if os.path.isfile(buoy2file):
 
-     ds = pd.read_csv(filepath_or_buffer=buoy2file, sep = '\s+', header=None, usecols=[1, 3, 4])
+     ds = pd.read_csv(filepath_or_buffer=buoy2file, sep='\\s+', header=None, usecols=[1, 3, 4])
      ds.columns = ['date','latitude','longitude']
      plt.plot(ds['longitude'], ds['latitude'], mtype, color=mcolor, markersize=msize, zorder=15, markeredgecolor='gray', transform=ccrs.PlateCarree())
      del ds
@@ -64,7 +64,7 @@ def addDrop(dropfile, plt, plotDict):
 
      if droptype == 'nhc':
 
-        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep = '\s+', engine='python', skiprows=13, skipfooter=1, \
+        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep='\\s+', engine='python', skiprows=13, skipfooter=1, \
                          names=['latitude', 'latitude_min', 'longitude', 'longitude_min'], usecols=[1, 2, 3, 4])
 
         droplat = ds['latitude'].to_numpy() + ds['latitude_min'].to_numpy() / 60.0
@@ -74,7 +74,7 @@ def addDrop(dropfile, plt, plotDict):
 
      elif droptype == 'hrd':
 
-        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep = '\s+', skiprows=6, usecols=[0, 1, 2, 3, 4, 5])
+        ds = pd.read_csv(filepath_or_buffer=dropfile, header=None, sep='\\s+', skiprows=6, usecols=[0, 1, 2, 3, 4, 5])
         ds.columns = ['seq','serial','date','time','latitude','longitude']
         if eval(plotDict.get('flip_lon','False')):
            ds['longitude'] = (360. - ds['longitude']) % 360.
@@ -183,7 +183,7 @@ def addTurns(turnfile, plt, plotDict):
 
      if turntype == 'nhc':
 
-        ds = pd.read_csv(filepath_or_buffer=turnfile, header=None, sep = '\s+', engine='python', skiprows=13, skipfooter=1, \
+        ds = pd.read_csv(filepath_or_buffer=turnfile, header=None, sep='\\s+', engine='python', skiprows=13, skipfooter=1, \
                          names=['latitude', 'latitude_min', 'longitude', 'longitude_min'], usecols=[1, 2, 3, 4])
 
         turnlat = ds['latitude'].to_numpy() + ds['latitude_min'].to_numpy() / 60.0
@@ -246,11 +246,11 @@ def background_map(proj, lon1, lon2, lat1, lat2, DomDict):
      ax = plt.axes(projection=projinfo)
 
   states = NaturalEarthFeature(category="cultural", scale="50m",
-                               facecolor="none", name="admin_1_states_provinces")
+                               facecolor='none', name="admin_1_states_provinces")
   ax.add_feature(states, linewidth=0.5, edgecolor="black")
   ax.coastlines('50m', linewidth=1.0)
-  ax.add_feature(cartopy.feature.LAKES, facecolor='None', linewidth=1.0, edgecolor='black')
-  ax.add_feature(cartopy.feature.BORDERS, facecolor='None', linewidth=1.0, edgecolor='black')
+  ax.add_feature(cartopy.feature.LAKES, linewidth=1.0, edgecolor='black', facecolor='none')
+  ax.add_feature(cartopy.feature.BORDERS, linewidth=1.0, edgecolor='black')
 
   if proj == 'NorthPolarStereo':
 
