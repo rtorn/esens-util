@@ -210,6 +210,8 @@ def set_projection(proj, lon1, lon2, DomDict):
                                       standard_parallels=(float(DomDict['standard_parallel1']), float(DomDict['standard_parallel2'])))
   elif proj == 'RotatedLatLon':
      projinfo = ccrs.RotatedPole(pole_longitude=float(DomDict['central_longitude']), pole_latitude=float(DomDict['central_latitude']))
+  elif proj == 'LambertAzimuthalEqualArea':
+     projinfo = ccrs.LambertAzimuthalEqualArea(central_longitude=float(DomDict['central_longitude']), central_latitude=float(DomDict['central_latitude']))
   elif (lon1 < 180. and lon2 > 180.):
      projinfo = ccrs.PlateCarree(central_longitude=180.)
   else:
@@ -301,6 +303,28 @@ def background_map(proj, lon1, lon2, lat1, lat2, DomDict):
      gridInt = float(DomDict.get('grid_interval', 10.))
 
      gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
+                     linewidth=1, color='gray', alpha=0.5, linestyle='-')
+     gl.top_labels = None
+     gl.bottom_labels = None
+     gl.left_labels = None
+     gl.right_labels = None
+     gl.xlocator = mticker.FixedLocator(np.arange(-180.,180.,gridInt))
+     gl.xformatter = LONGITUDE_FORMATTER
+     gl.xlabel_style = {'size': 12, 'color': 'gray'}
+     gl.ylocator = mticker.FixedLocator(np.arange(-90.+gridInt,90.,gridInt))
+     gl.yformatter = LATITUDE_FORMATTER
+     gl.ylabel_style = {'size': 12, 'color': 'gray'}
+
+  elif proj == 'LambertAzimuthalEqualArea':
+
+     llpt = ax.projection.transform_points(ccrs.PlateCarree(), np.array([lon1]), np.array([lat1]))
+     urpt = ax.projection.transform_points(ccrs.PlateCarree(), np.array([lon2]), np.array([lat2]))
+     ax.set_xlim([llpt[0,0], urpt[0,0]])
+     ax.set_ylim([llpt[0,1], urpt[0,1]])
+
+     gridInt = float(DomDict.get('grid_interval', 10.))
+
+     gl = ax.gridlines(crs=ccrs.PlateCarree(), draw_labels=False,
                      linewidth=1, color='gray', alpha=0.5, linestyle='-')
      gl.top_labels = None
      gl.bottom_labels = None
