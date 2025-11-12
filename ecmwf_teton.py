@@ -209,7 +209,7 @@ def stage_atcf_files(datea, bbnnyyyy, config):
 
                    late, lone = edata.ens_lat_lon_time(fhrvec[t])
 
-                   if late != edata.missing and lone != edata.missing:
+                   if late != edata.missing and lone != edata.missing and t_lat[t] != gdata.missing:
 
                       e_cnt = e_cnt + 1
                       if bbnnyyyy[0:2] == "ep" or bbnnyyyy[0:2] == "cp":

@@ -48,7 +48,7 @@ def stage_grib_files(datea, config):
 
     #  Copy the forecast hours that are not present
     if len(arglist) > 0:
-       with Pool() as pool:
+       with Pool(processes=config['model'].get('download_processes',8)) as pool:
           results = pool.map(download_grib_file, arglist)
 
 
@@ -65,7 +65,7 @@ def download_grib_file(args):
     initstr = '{0}-{1}-{2} {3}:00'.format(datea[0:4],datea[4:6],datea[6:8],datea[8:10])
     fhrt    = '%0.3i' % fhr
 
-    varstr1 = ':UGRD:\d+ mb|:VGRD:\d+ mb|:HGT:\d+ mb|:RH:\d+ mb|:TMP:\d+ mb|:UGRD:10 m above|:VGRD:10 m above|PRMSL|PWAT|APCP|CFRZR|CSNOW'
+    varstr1 = ':UGRD:\\d+ mb|:VGRD:\\d+ mb|:HGT:\\d+ mb|:RH:\\d+ mb|:TMP:\\d+ mb|:UGRD:10 m above|:VGRD:10 m above|PRMSL|PWAT|APCP|CFRZR|CSNOW'
     varstr2 = 'TMP:300 mb|TMP:400 mb|RH:300 mb|RH:400 mb'
 
     for n in range(int(config['model']['num_ens'])+1):
