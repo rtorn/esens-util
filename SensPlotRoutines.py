@@ -124,7 +124,8 @@ def addRangeRings(cen_lat, cen_lon, lat, lon, plt, plotDict):
     else:
       rrings = rinput
 
-    pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=1.0,colors='gray',transform=ccrs.PlateCarree())
+    pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=plotDict.get('range_linewidth',1.0), \
+                         colors=plotDict.get('range_colors','gray'),transform=ccrs.PlateCarree())
     lab = plt.clabel(pltrr, [])
 
 
