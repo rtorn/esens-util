@@ -1,6 +1,5 @@
-import os
+import os, sys, glob
 import time
-import sys
 import cfgrib
 import gzip
 import urllib
@@ -48,7 +47,7 @@ def stage_grib_files(datea, config):
 
     #  Copy the forecast hours that are not present
     if len(arglist) > 0:
-       with Pool(processes=config['model'].get('download_processes',8)) as pool:
+       with Pool(processes=config['model'].get('download_processes',10)) as pool:
           results = pool.map(download_grib_file, arglist)
 
 
@@ -74,6 +73,9 @@ def download_grib_file(args):
 
     #  Merge output from primary and secondary file, remove single member files
     os.rename(file1, 'f{0}.grb2'.format(fhrt))
+
+    for idxfile in glob.glob('{0}*-{1}h-enfo-ef.index'.format(datea,fhr)):
+      os.remove(idxfile)
 
 
 def stage_atcf_files(datea, bbnnyyyy, config):
