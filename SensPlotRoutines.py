@@ -110,7 +110,7 @@ def addRangeRings(cen_lat, cen_lon, lat, lon, plt, plotDict):
   '''
 
   if 'ring_values' in plotDict:
-    rinput = [e.strip() for e in plotDict.get('ring_values').split(',')]
+    rinput = [float(i) for i in [e.strip() for e in plotDict.get('ring_values').split(',')]]
   else:
     rinput = [500., 1000., 1500.]
 
@@ -124,7 +124,7 @@ def addRangeRings(cen_lat, cen_lon, lat, lon, plt, plotDict):
     else:
       rrings = rinput
 
-    pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=plotDict.get('range_linewidth',1.0), \
+    pltrr = plt.contour(lon[:],lat[:],tcdist,rrings,linewidths=float(plotDict.get('range_linewidth',1.0)), \
                          colors=plotDict.get('range_colors','gray'),transform=ccrs.PlateCarree())
     lab = plt.clabel(pltrr, [])
 
