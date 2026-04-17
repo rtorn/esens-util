@@ -47,7 +47,7 @@ def stage_grib_files(datea, config):
 
     #  Copy the forecast hours that are not present
     if len(arglist) > 0:
-       with Pool(processes=config['model'].get('download_processes',10)) as pool:
+       with Pool(processes=int(config['model'].get('download_processes','10'))) as pool:
           results = pool.map(download_grib_file, arglist)
 
 
