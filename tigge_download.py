@@ -1,9 +1,9 @@
-from ecmwfapi import ECMWFDataServer
 import sys, os
 import argparse
 import datetime as dt
 import configparser
 import numpy as np
+import cdsapi
 
 '''
 Program that retrieves forecast fields from a single initialization time from the 
@@ -74,10 +74,10 @@ elif config['model']['model_src'] == 'GEFS':
 
 os.chdir(config['locations']['work_dir'])
 
-server = ECMWFDataServer()
+client = cdsapi.Client()
 
 #  Retrieve pressure level data
-server.retrieve({
+request = {
     'origin'    : model_str,
     'levelist'  : "200/250/300/500/700/850/925/1000",
     'levtype'   : "pl",
@@ -92,13 +92,14 @@ server.retrieve({
     'type'      : "pf/cf",
     'date'      : daystr,
     'class'     : "ti",
-    'packing'   : "simple",
     'target'    : "tigge_output_pl.grib"
-})
+}
+
+client.retrieve('tigge-forecasts', request, 'tigge_output_pl.grib')
 
 '''
 #  Retrieve PV level data
-server.retrieve({
+request = {
     'origin'    : model_str,
     'levtype'   : "pv",
     'levelist'  : "2",
@@ -106,35 +107,21 @@ server.retrieve({
     'parameter' : "3/131/132",
     'number'    : model_num,
     'dataset'   : "tigge",
+    'area'      : config['model'].get('tigge_area','90/-180/-90/179'),
     'step'      : config['model']['tigge_forecast_time'],
     'grid'      : config['model'].get('tigge_forecast_grid','1.0/1.0'),
     'time'      : hhstr,
-    'type'      : "pf",
+    'type'      : "pf/cf",
     'date'      : daystr,
     'class'     : "ti",
-    'target'    : "tigge_output_pv_pf.grib"
-})
+}
 
-server.retrieve({
-    'origin'    : model_str,
-    'levtype'   : "pv",
-    'levelist'  : "2",
-    'expver'    : "prod",
-    'parameter' : "3/131/132",
-    'dataset'   : "tigge",
-    'step'      : config['model']['tigge_forecast_time'],
-    'grid'      : config['model'].get('tigge_forecast_grid','1.0/1.0'),
-    'time'      : hhstr,
-    'type'      : "cf",
-    'date'      : daystr,
-    'class'     : "ti",
-    'target'    : "tigge_output_pv_cf.grib"
-})
+client.retrieve('tigge-forecasts', request, 'tigge_output_pv.grib')
 
 '''
 
 #  Retrieve surface data
-server.retrieve({
+request = {
     'origin'    : model_str,
     'levtype'   : "sfc",
     'expver'    : "prod",
@@ -148,12 +135,12 @@ server.retrieve({
     'type'      : "pf/cf",
     'date'      : daystr,
     'class'     : "ti",
-    'packing'   : "simple",
-    'target'    : "tigge_output_sfc.grib"
-})
+}
+
+client.retrieve('tigge-forecasts', request, 'tigge_output_sfc.grib')
 
 #  Retrieve higher-resolution surface fields
-server.retrieve({
+request = {
     'origin'    : model_str,
     'levtype'   : "sfc",
     'expver'    : "prod",
@@ -167,9 +154,9 @@ server.retrieve({
     'type'      : "pf/cf",
     'date'      : daystr,
     'class'     : "ti",
-    'packing'   : "simple",
-    'target'    : "tigge_output_hrsfc.grib"
-})
+}
+
+client.retrieve('tigge-forecasts', request, 'tigge_output_hrsfc.grib')
 
 for ftype in ["pl", "sfc", 'hrsfc']:
    os.system("wgrib2 -s tigge_output_{0}.grib >& grib_{0}.out".format(ftype))
