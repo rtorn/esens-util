@@ -45,11 +45,10 @@ def stage_grib_files(datea, config):
     for fhr in range(0, int(fmax)+int(freq), int(freq)):
 
        datef   = init + dt.timedelta(hours=fhr)
-       datef_s = datef.strftime("%m%d%H%M")
+       datef_s = datef.strftime("%m%d%H")
 
-       grib_file = 'E1E{0}{1}1'.format(str(init_s), str(datef_s))
-       infile    = '{0}/{1}'.format(config['locations']['model_dir'],grib_file)
-       outfile   = '{0}/{1}'.format(config['locations']['work_dir'],grib_file)
+       infile   = '{0}/E1E{1}{2}{3}1'.format(config['locations']['model_dir'],str(init_s),str(datef_s),'00') 
+       outfile  = '{0}/E1E{1}{2}{3}1'.format(config['locations']['work_dir'],str(init_s),str(datef_s),'00')
 
        #  Only try to copy if the file is not there
        if ( not os.path.isfile(outfile) ):
@@ -66,6 +65,21 @@ def stage_grib_files(datea, config):
              os.symlink(infile, outfile)
           except Exception as err:
              raise err
+
+          if fhr == 0:
+             mm = '01'
+          else:
+             mm = '00'
+          indetr  = '{0}/E1D{1}{2}{3}1'.format(config['locations']['model_dir'],str(init_s),str(datef_s),mm)
+          outdetr = '{0}/E1D{1}{2}{3}1'.format(config['locations']['work_dir'],str(init_s),str(datef_s),'00')
+
+          #  Check to see if deterministic file is present (new as of cy50r1)
+          if os.path.isfile(indetr):
+
+             while ( (time.time() - os.path.getmtime(indetr)) < 60 ):
+                time.sleep(10) 
+
+             os.symlink(indetr, outdetr)
 
 
 def stage_atcf_files(datea, bbnnyyyy, config):
@@ -317,6 +331,20 @@ class ReadGribFiles:
 
         except IOError as exc:
            raise RuntimeError('Failed to open {0}'.format(file_name)) from exc
+
+       
+        #  Input deterministic forecast if in a separate file
+        file_name = '{0}/E1D{1}{2}1'.format(config['locations']['work_dir'],str(init_s),str(datef_s))
+        if os.path.exists(file_name):
+
+           ds2 = cfgrib.open_datasets(file_name)
+           for d in ds2:
+              for tt in d:
+                 if 'number' in d[tt].dims:
+                    self.grib_dict.update({'{0}_pf'.format(tt): d[tt]})
+                 else:
+                    self.grib_dict.update({'{0}_cf'.format(tt): d[tt]})
+
 
         #  This is a dictionary that maps from generic variable names to the name of variable in file
         self.var_dict = {'zonal_wind': 'u',           \
