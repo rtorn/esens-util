@@ -423,7 +423,7 @@ def great_circle(lon1, lat1, lon2, lat2):
 
     dist[:] = np.sin(lat1) * np.sin(lat2[:]) + np.cos(lat1) * np.cos(lat2[:]) * np.cos(lon1 - lon2[:])
 
-    return 6371. * np.arccos(np.minimum(dist,1.0))
+    return 6371. * np.arccos(np.maximum(-1.0,np.minimum(dist,1.0)))
 
 
 def writeSensFile(lat, lon, fhr, emean, sens, sigv, sensfile, plotDict):
