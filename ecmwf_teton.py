@@ -116,12 +116,23 @@ def stage_atcf_files(datea, bbnnyyyy, config):
 
           #  Wait for the source file to be present 
           while not os.path.exists(src):
+             alt_src = glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper()))
+             if len(alt_src) > 0:
+                if os.path.exists(alt_src[0]):
+                   src = max(alt_src, key=os.path.getsize)
+                   break
              time.sleep(20.5)
 
           #  Wait for the ensemble ATCF information to be placed in the file
           while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
+             alt_src = glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper()))
+             if len(alt_src) > 0:
+                if os.path.exists(alt_src[0]):
+                   src = max(alt_src, key=os.path.getsize)
+                   break
              time.sleep(20.7)
 
+          print(src)
           #  Wait for the file to be finished being copied
           while ( (time.time() - os.path.getmtime(src)) < 60 ):
              time.sleep(10)
