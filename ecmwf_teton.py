@@ -114,22 +114,20 @@ def stage_atcf_files(datea, bbnnyyyy, config):
        #  If this is a numbered storm, look for an ATCF file
        if int(bbnnyyyy[2:4]) < 50:
 
-          #  Wait for the source file to be present 
-          while not os.path.exists(src):
-             alt_src = glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper()))
-             if len(alt_src) > 0:
-                if os.path.exists(alt_src[0]):
-                   src = max(alt_src, key=os.path.getsize)
-                   break
+          #  Look for either a storm file, or individual initialization time
+          while not os.path.exists(src) and glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper())) < 1:
              time.sleep(20.5)
 
-          #  Wait for the ensemble ATCF information to be placed in the file
-          while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
+          #  Use the initialization time file, or storm file as second priority
+          while True:
+
              alt_src = glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper()))
              if len(alt_src) > 0:
-                if os.path.exists(alt_src[0]):
-                   src = max(alt_src, key=os.path.getsize)
-                   break
+                src = max(alt_src, key=os.path.getsize)
+                break
+             elif len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) > 0:
+                break
+              
              time.sleep(20.7)
 
           print(src)
