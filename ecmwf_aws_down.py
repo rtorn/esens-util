@@ -42,7 +42,11 @@ def stage_grib_files(datea, config):
     #  Figure out which forecast hours are missing in the work directory
     arglist = []
     for fhr in range(0, int(fmax)+int(freq), int(freq)):
-       if not os.path.isfile('f{0}.grb2'.format('%0.3i' % fhr)):
+       hhh = '%0.3i' % fhr
+       if not os.path.isfile('f{0}_enfo.grb2'.format(hhh)) and os.path.isfile('{0}/{1}/f{2}_enfo.grb2'.format(config['locations']['model_dir'],datea,hhh)):
+          os.symlink('{0}/{1}/f{2}_enfo.grb2'.format(config['locations']['model_dir'],datea,hhh),'f{0}_enfo.grb2'.format(hhh))
+          os.symlink('{0}/{1}/f{2}_oper.grb2'.format(config['locations']['model_dir'],datea,hhh),'f{0}_oper.grb2'.format(hhh))
+       if not os.path.isfile('f{0}_enfo.grb2'.format(hhh)):
           arglist.append((datea, fhr, config))
 
     #  Copy the forecast hours that are not present
@@ -68,11 +72,24 @@ def download_grib_file(args):
 
     #  Read the ECMWF members
     H = Herbie(initstr, model='ifs', product='enfo', fxx=fhr)
-    H.LOCALFILE = "{0}/f{1}_mem.grb2".format(config['locations']['work_dir'],fhrt)
+    H.LOCALFILE = "{0}/f{1}_enfo.grb2".format(config['locations']['work_dir'],fhrt)
     file1 = H.download(varstr)
+    os.rename(file1, 'f{0}_enfo.grb2'.format(fhrt))
 
-    #  Merge output from primary and secondary file, remove single member files
-    os.rename(file1, 'f{0}.grb2'.format(fhrt))
+#    ds = xr.merge(H.xarray(varstr))
+#    encode_list = {var: {"zlib": True, "complevel": 1} for var in ds.data_vars} 
+#    ds.to_netcdf("{0}/f{1}_enfo.nc".format(config['locations']['work_dir'],fhrt), encoding=encode_list)
+#    del ds, H
+
+    H = Herbie(initstr, model='ifs', product='oper', fxx=fhr)
+    H.LOCALFILE = "{0}/f{1}_oper.grb2".format(config['locations']['work_dir'],fhrt)
+    file1 = H.download(varstr)
+    os.rename(file1, 'f{0}_oper.grb2'.format(fhrt))
+
+#    ds = xr.merge(H.xarray(varstr))
+#    encode_list = {var: {"zlib": True, "complevel": 1} for var in ds.data_vars}      
+#    ds.to_netcdf("{0}/f{1}_cont.nc".format(config['locations']['work_dir'],fhrt), encoding=encode_list)
+#    del ds, H
 
     for idxfile in glob.glob('{0}*-{1}h-enfo-ef.index'.format(datea,fhr)):
       os.remove(idxfile)
@@ -110,14 +127,23 @@ def stage_atcf_files(datea, bbnnyyyy, config):
        #  If this is a numbered storm, look for an ATCF file
        if int(bbnnyyyy[2:4]) < 50:
 
-          #  Wait for the source file to be present 
-          while not os.path.exists(src):
+          #  Look for either a storm file, or individual initialization time
+          while not os.path.exists(src) and glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper())) < 1:
              time.sleep(20.5)
 
-          #  Wait for the ensemble ATCF information to be placed in the file
-          while ( len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) == 0 ):
+          #  Use the initialization time file, or storm file as second priority
+          while True:
+
+             alt_src = glob.glob('{0}/*_{1}0000*{2}*.dat'.format(config['locations']['atcf_dir'],datea,config['storm'][0:-3].upper()))
+             if len(alt_src) > 0:
+                src = max(alt_src, key=os.path.getsize)
+                break
+             elif len(os.popen('sed -ne /{0}/p {1} | sed -ne /EE/p'.format(datea,src)).read()) > 0:
+                break
+
              time.sleep(20.7)
 
+          print(src)
           #  Wait for the file to be finished being copied
           while ( (time.time() - os.path.getmtime(src)) < 60 ):
              time.sleep(10)
@@ -308,25 +334,39 @@ class ReadGribFiles:
 
     def __init__(self, datea, fhr, config):
 
+        keylist = ['isobaricInhPa', 'entireAtmosphere', 'heightAboveGround', 'meanSea', 'surface']
+
         init    = dt.datetime.strptime(datea, '%Y%m%d%H')
         init_s  = init.strftime("%m%d%H%M")
         datef   = init + dt.timedelta(hours=fhr)
         datef_s = datef.strftime("%m%d%H%M")
 
         #  Construct the grib file dictionary for a particular forecast hour
-        file_name = "{0}/f{1}.grb2".format(config['locations']['work_dir'], '%0.3i' % fhr)
+        self.grib_dict = {}
+        file_name = "{0}/f{1}_enfo.grb2".format(config['locations']['work_dir'], '%0.3i' % fhr)
         try:
-           ds = cfgrib.open_datasets(file_name)
-           self.grib_dict = {}
-           for d in ds:
-              for tt in d:
-                 if 'number' in d[tt].dims:
-                    self.grib_dict.update({'{0}_pf'.format(tt): d[tt]})
-                 else:
-                    self.grib_dict.update({'{0}_cf'.format(tt): d[tt]})
+           for key in keylist:
+             ds = xr.open_dataset(file_name, engine='cfgrib', backend_kwargs={'filter_by_keys': {'typeOfLevel': key}})
+             for tt in ds:
+               if 'number' in ds[tt].dims:
+                 self.grib_dict.update({'{0}_pf'.format(tt): ds[tt]})
+               else:
+                 self.grib_dict.update({'{0}_cf'.format(tt): ds[tt]})
 
         except IOError as exc:
            raise RuntimeError('Failed to open {0}'.format(file_name)) from exc
+
+        file_name = "{0}/f{1}_oper.grb2".format(config['locations']['work_dir'], '%0.3i' % fhr)
+        if os.path.exists(file_name):
+
+          for key in keylist:
+             ds = xr.open_dataset(file_name, engine='cfgrib', backend_kwargs={'filter_by_keys': {'typeOfLevel': key}})
+             for tt in ds:
+               if 'number' in ds[tt].dims:
+                 self.grib_dict.update({'{0}_pf'.format(tt): ds[tt]})
+               else:
+                 self.grib_dict.update({'{0}_cf'.format(tt): ds[tt]})
+
 
         #  This is a dictionary that maps from generic variable names to the name of variable in file
         self.var_dict = {'zonal_wind': 'u',           \
@@ -488,14 +528,14 @@ class ReadGribFiles:
              vname = '{0}_cf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']),  \
                                                longitude=slice(vdict['lon_start'], vdict['lon_end']), \
-                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end'])).copy(deep=True)
+                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end']))
 
           else:
              vname = '{0}_pf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(number=member,                                         \
                                                latitude=slice(vdict['lat_start'], vdict['lat_end']),  \
                                                longitude=slice(vdict['lon_start'], vdict['lon_end']), \
-                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end'])).copy(deep=True)
+                                               isobaricInhPa=slice(vdict['pres_start'], vdict['pres_end']))
 
        #  Read the only level if it is a single level variable
        else:
@@ -503,14 +543,14 @@ class ReadGribFiles:
           if member == 0:  #  Control member
              vname = '{0}_cf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(latitude=slice(vdict['lat_start'], vdict['lat_end']), \
-                                               longitude=slice(vdict['lon_start'], vdict['lon_end'])).copy(deep=True)
+                                               longitude=slice(vdict['lon_start'], vdict['lon_end']))
 
           else:
 
              vname = '{0}_pf'.format(self.var_dict[varname])
              vout  = self.grib_dict[vname].sel(number=member,                                        \
                                                latitude=slice(vdict['lat_start'], vdict['lat_end']), \
-                                               longitude=slice(vdict['lon_start'], vdict['lon_end'])).copy(deep=True)
+                                               longitude=slice(vdict['lon_start'], vdict['lon_end']))
 
        if 'valid_time' in list(vout.coords):
           return(vout.reset_coords('valid_time', drop=True))
