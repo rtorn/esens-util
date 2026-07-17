@@ -615,7 +615,7 @@ def plotVecSens(lat, lon, sens, umea, vmea, sigv, fileout, plotDict):
   tcLon      = plotDict.get('tcLon', -9999.)
 
   sigval     = plotDict.get('sig_value', 2.007)
-  barbInt    = int(plotDict.get('barb_interval', 6))
+  barbInt    = int(plotDict.get('barb_interval', 6.0 / abs(lat[1]-lat[0])))
 
   colorlist = ("#9A32CD","#00008B","#3A5FCD","#00BFFF","#B0E2FF","#FFFFFF","#FFEC8B","#FFA500","#FF4500","#B22222","#FF82AB")
   cmap = matplotlib.colors.ListedColormap(colorlist)
