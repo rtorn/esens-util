@@ -42,6 +42,9 @@ def stage_grib_files(datea, config):
     #  Figure out which forecast hours are missing in the work directory
     arglist = []
     for fhr in range(0, int(fmax)+int(freq), int(freq)):
+       hhh = '%0.3i' % fhr
+       if not os.path.isfile('f{0}.grb2'.format(hhh)) and os.path.isfile('{0}/{1}/f{2}.grb2'.format(config['locations']['model_dir'],datea,hhh)):
+          os.symlink('{0}/{1}/f{2}.grb2'.format(config['locations']['model_dir'],datea,hhh),'f{0}.grb2'.format(hhh))
        if not os.path.isfile('f{0}.grb2'.format('%0.3i' % fhr)):
           arglist.append((datea, fhr, config))
 
